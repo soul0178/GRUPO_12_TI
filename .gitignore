@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+# Secretos y BD local
+.env
+*.db
+# Node
+node_modules/
+dist/
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store

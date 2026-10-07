@@ -1,0 +1,153 @@
+@startuml modelo_capas_v2
+title Modelo de Dominio Extendido v2 – Arquitectura de 3 Capas (monolito modular)
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowFontSize 11
+skinparam nodesep 30
+skinparam ranksep 55
+skinparam class {
+  BackgroundColor #FFFFFF
+  BackgroundColor<<UI>> #DAE8FC
+  BackgroundColor<<Router>> #DAE8FC
+  BackgroundColor<<Application Service>> #D5E8D4
+  BackgroundColor<<DTO>> #E1D5E7
+  BackgroundColor<<Aggregate Root>> #FFF2CC
+  BackgroundColor<<Domain Service>> #FFF2CC
+  BackgroundColor<<Port>> #F8CECC
+  BackgroundColor<<Adapter>> #F5F5F5
+  BorderColor #444444
+}
+hide empty members
+
+package "1. Capa de Presentación (UI)" as L1 {
+  class "SPA React (Vite)" as SPA <<UI>> {
+    + LoginPage
+    + PerfilPage
+    + ReservaWizard (máx. 3 pasos)
+    + PanelAdmin
+    + RutaProtegida(rol)
+  }
+  class "Routers FastAPI (Controllers)" as ROUT <<Router>> {
+    + POST /auth/register, /auth/login
+    + GET /usuarios/me · PUT /usuarios/me/perfil
+    + GET /items · /admin/items (alta, modif., baja)
+    + POST /reservas · DELETE /reservas/{id}
+    + POST /prestamos · /prestamos/{id}/autorizar
+    + POST /prestamos/{id}/entrega · /devolucion
+    + GET /sanciones · POST /admin/sanciones/{id}/condonar
+  }
+  class "DependenciaPermisos (RBAC)" as RBAC <<Router>> {
+    + validar JWT
+    + requiere_rol(roles): Usuario
+  }
+}
+
+package "2. Capa de Lógica de Negocio" as L2 {
+  package "2.1 Aplicación (casos de uso)" as APP {
+    class UsuarioAppService <<Application Service>> {
+      + registrar(RegistroDTO)
+      + login(LoginDTO): Token
+      + actualizarPerfil(PerfilDTO)
+    }
+    class InventarioAppService <<Application Service>> {
+      + altaModificarBaja(ItemDTO)
+    }
+    class ReservaAppService <<Application Service>> {
+      + procesarReserva(ReservaDTO)
+      + cancelarReserva(reservaId)
+    }
+    class PrestamoAppService <<Application Service>> {
+      + solicitarPrestamo(PrestamoDTO)
+      + gestionarAutorizacion(PrestamoDTO)
+      + registrarEntrega(EntregaDTO)
+      + registrarDevolucion(DevolucionDTO)
+    }
+    class SancionAppService <<Application Service>> {
+      + condonar(sancionId, adminId)
+    }
+    class HistorialQueryService <<Application Service>> {
+      + historialPorUsuario(usuarioId)
+      + historialPorItem(itemId)
+    }
+    class EventBus <<Application Service>> {
+      + publicar(evento)
+      + suscribir(tipo, handler)
+    }
+    class "DTOs" as DTO <<DTO>> {
+      ReservaDTO(usuarioId, itemId, inicio, fin)
+      PrestamoDTO · EntregaDTO · DevolucionDTO
+      RegistroDTO · LoginDTO · PerfilDTO · ItemDTO
+    }
+  }
+  package "2.2 Dominio (núcleo)" as DOM {
+    class "Agregados" as AGG <<Aggregate Root>> {
+      Usuario · ItemInventario
+      Reserva · Prestamo
+      Sancion · PoliticaPrestamo
+    }
+    class ValidadorDisponibilidadService <<Domain Service>> {
+      + verificarDuplicidadHorarios(itemId, franja)
+    }
+    class EvaluadorPoliticasService <<Domain Service>> {
+      + evaluarSancionPorRetrasoODano(prestamo)
+    }
+    interface "Puertos: interfaces de repositorio" as PORTS <<Port>> {
+      IUsuarioRepository · IItemRepository
+      IReservaRepository.buscarSolapadas(itemId, franja)
+      IPrestamoRepository.guardar / buscarPorId
+      IPrestamoRepository.buscarActivosPorItem / buscarVencidos
+      ISancionRepository · IPoliticaRepository
+    }
+  }
+}
+
+package "3. Capa de Datos (Persistencia / Infraestructura)" as L3 {
+  class "Repositorios SQLAlchemy" as REPOS <<Adapter>> {
+    SqlUsuarioRepository · SqlItemRepository
+    SqlReservaRepository · SqlPrestamoRepository
+    SqlSancionRepository · SqlPoliticaRepository
+  }
+  class "Scheduler de vencimientos" as JOB <<Adapter>> {
+    + detectarPrestamosVencidos()
+  }
+  class "BaseDeDatos (SQLite → PostgreSQL)" as DB <<Adapter>> {
+    - tablas SQL
+    - restricción EXCLUDE USING gist (item_id, franja)
+    - columna version (bloqueo optimista)
+  }
+}
+
+SPA ..> ROUT : HTTP / JSON
+ROUT ..> RBAC : protege rutas
+ROUT ..> DTO : transporta datos
+ROUT ..> UsuarioAppService : invoca
+ROUT ..> InventarioAppService
+ROUT ..> ReservaAppService
+ROUT ..> PrestamoAppService
+ROUT ..> SancionAppService
+ROUT ..> HistorialQueryService
+
+ReservaAppService ..> ValidadorDisponibilidadService : usa
+PrestamoAppService ..> ValidadorDisponibilidadService : usa
+PrestamoAppService ..> EventBus : publica eventos
+EventBus ..> EvaluadorPoliticasService : PrestamoDevuelto /\nPrestamoVencido
+EvaluadorPoliticasService ..> AGG : genera Sancion
+ValidadorDisponibilidadService ..> PORTS : consulta
+APP ..> AGG : orquesta
+APP ..> PORTS : usa
+
+REPOS ..|> PORTS : implementa
+REPOS --> DB : ejecuta SQL
+JOB ..> PORTS : buscarVencidos()
+JOB ..> EventBus : publica PrestamoVencido
+
+note right of PORTS
+  <b>Inversión de dependencias:</b>
+  el dominio define las interfaces;
+  la capa de datos las implementa.
+  El dominio no conoce SQLAlchemy ni FastAPI.
+end note
+@enduml

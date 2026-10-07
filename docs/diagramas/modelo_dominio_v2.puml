@@ -1,0 +1,308 @@
+@startuml modelo_dominio_v2
+title Modelo de Dominio v2 – Sistema de Préstamos EPCC (DDD)
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam nodesep 30
+skinparam ranksep 50
+skinparam linetype ortho
+skinparam ArrowFontSize 11
+skinparam class {
+  BackgroundColor #FFFFFF
+  BackgroundColor<<Aggregate Root>> #FFF2CC
+  BackgroundColor<<Entity>> #DAE8FC
+  BackgroundColor<<Value Object>> #E1D5E7
+  BackgroundColor<<Domain Service>> #D5E8D4
+  BackgroundColor<<Domain Event>> #F8CECC
+  BorderColor #444444
+}
+hide empty members
+
+' =====================================================
+package "IAM_Usuarios  (Subdominio Genérico)" as IAM {
+  class Usuario <<Aggregate Root>> {
+    - UsuarioId id
+    - String correoInstitucional
+    - Rol rol
+    - EstadoCuenta estadoCuenta
+    - int version
+    + registrar(correo, rol, perfil)
+    + actualizarPerfil(datos: DatosContacto)
+    + cambiarRol(adminId: UsuarioId, rol: Rol)
+    + suspender(sancionId: SancionId)
+    + reactivar()
+    + puedeSolicitarPrestamos(): boolean
+  }
+  class Perfil <<Entity>> {
+    - PerfilId perfilId
+    - String nombres
+    - String apellidos
+    - String codigoInstitucional
+    - DatosContacto contacto
+  }
+  class DatosContacto <<Value Object>> {
+    - String telefono
+    - String direccion
+    - String correoAlterno
+  }
+  enum Rol <<Value Object>> {
+    ESTUDIANTE
+    DOCENTE
+    ADMINISTRATIVO
+    ADMINISTRADOR_SISTEMA
+  }
+  enum EstadoCuenta <<Value Object>> {
+    ACTIVA
+    SUSPENDIDA
+    INACTIVA
+  }
+}
+
+' =====================================================
+package "Catalogo_Inventario  (Subdominio de Soporte)" as CAT {
+  class ItemInventario <<Aggregate Root>> {
+    - ItemId id
+    - String codigo
+    - String nombre
+    - TipoItem tipo
+    - EstadoFisico estadoFisicoActual
+    - EstadoDisponibilidad disponibilidad
+    - int version
+    + registrarAlta(adminId: UsuarioId)
+    + modificarDetalles(adminId: UsuarioId, ...)
+    + registrarBaja(adminId: UsuarioId)
+    + actualizarEstadoFisico(estado: EstadoFisico)
+    + marcarPrestado()
+    + marcarDisponible()
+    + estaDisponibleParaPrestamo(): boolean
+  }
+  enum TipoItem <<Value Object>> {
+    LIBRO
+    EQUIPO
+    OBJETO
+  }
+  enum EstadoFisico <<Value Object>> {
+    BUENO
+    REGULAR
+    DANADO
+  }
+  enum EstadoDisponibilidad <<Value Object>> {
+    DISPONIBLE
+    PRESTADO
+    EN_MANTENIMIENTO
+    DADO_DE_BAJA
+  }
+}
+
+' =====================================================
+package "Circulacion_Prestamos_Reservas  (Core Domain)" as CIR {
+  class Reserva <<Aggregate Root>> {
+    - ReservaId id
+    - UsuarioId solicitanteId
+    - ItemId itemId
+    - FranjaHoraria franja
+    - EstadoReserva estado
+    - DateTime creadaEn
+    - int version
+    + crear(solicitanteId, itemId, franja)
+    + confirmar()
+    + cancelar()
+    + expirar()
+    + marcarConvertida(prestamoId: PrestamoId)
+  }
+  class Prestamo <<Aggregate Root>> {
+    - PrestamoId id
+    - UsuarioId solicitanteId
+    - ItemId itemId
+    - ReservaId reservaId [0..1]
+    - FranjaHoraria periodo
+    - Garantia garantia
+    - EstadoPrestamo estado
+    - UsuarioId autorizadoPorAdminId
+    - int version
+    + solicitar(...)
+    + autorizar(adminId: UsuarioId)
+    + rechazar(adminId: UsuarioId, motivo: String)
+    + registrarSalida(entrega: Entrega)
+    + registrarDevolucion(devolucion: Devolucion)
+    + estaVencido(ahora: DateTime): boolean
+    + retrasoEn(ahora: DateTime): Duration
+  }
+  class Entrega <<Entity>> {
+    - EntregaId id
+    - DateTime fechaSalida
+    - EstadoFisico estadoInicial
+    - UsuarioId entregadoPorAdminId
+  }
+  class Devolucion <<Entity>> {
+    - DevolucionId id
+    - DateTime fechaDevolucion
+    - EstadoFisico estadoRecepcion
+    - UsuarioId recibidoPorAdminId
+    - String observaciones
+  }
+  class Garantia <<Value Object>> {
+    - TipoGarantia tipo
+    - String descripcion
+    - Decimal valorReferencial
+  }
+  class FranjaHoraria <<Value Object>> {
+    - DateTime inicio
+    - DateTime fin
+    + solapaCon(otra: FranjaHoraria): boolean
+    + contiene(instante: DateTime): boolean
+    + duracion(): Duration
+  }
+  enum EstadoReserva <<Value Object>> {
+    PENDIENTE
+    CONFIRMADA
+    CANCELADA
+    EXPIRADA
+    CONVERTIDA
+  }
+  enum EstadoPrestamo <<Value Object>> {
+    SOLICITADO
+    AUTORIZADO
+    EN_CURSO
+    DEVUELTO
+    RECHAZADO
+  }
+  enum TipoGarantia <<Value Object>> {
+    NINGUNA
+    DOCUMENTO
+    DEPOSITO
+  }
+  class ValidadorDisponibilidadService <<Domain Service>> {
+    + verificarDuplicidadHorarios(itemId, franja): boolean
+    + verificarItemDisponible(itemId, franja)
+  }
+  class HistorialTransaccion <<Read Model>> {
+    - TransaccionId id
+    - PrestamoId prestamoId
+    - UsuarioId usuarioId
+    - ItemId itemId
+    - TipoEvento evento
+    - DateTime ocurridoEn
+    - String detalle
+  }
+}
+
+' =====================================================
+package "Politicas_Sanciones  (Subdominio de Soporte)" as POL {
+  class Sancion <<Aggregate Root>> {
+    - SancionId id
+    - UsuarioId usuarioSancionadoId
+    - PrestamoId prestamoId
+    - TipoInfraccion infraccion
+    - Penalizacion penalizacion
+    - EstadoSancion estado
+    - UsuarioId resueltoPorAdminId
+    - DateTime creadaEn
+    - int version
+    + aplicar()
+    + condonar(adminId: UsuarioId)
+    + marcarCumplida()
+  }
+  class PoliticaPrestamo <<Aggregate Root>> {
+    - PoliticaId id
+    - Rol rol
+    - TipoItem tipoItem
+    - int plazoMaximoHoras
+    - int limitePrestamosSimultaneos
+    - int toleranciaMinutos
+    + actualizar(adminId: UsuarioId, ...)
+    + permiteDuracion(duracion: Duration): boolean
+  }
+  class Penalizacion <<Value Object>> {
+    - TipoPenalizacion tipo
+    - int diasSuspension
+    - Decimal monto
+    - String descripcion
+  }
+  enum TipoInfraccion <<Value Object>> {
+    RETRASO
+    DANO
+    PERDIDA
+  }
+  enum TipoPenalizacion <<Value Object>> {
+    AMONESTACION
+    SUSPENSION
+    MULTA
+    REPOSICION
+  }
+  enum EstadoSancion <<Value Object>> {
+    ACTIVA
+    CUMPLIDA
+    CONDONADA
+  }
+  class EvaluadorPoliticasService <<Domain Service>> {
+    + evaluarSancionPorRetrasoODano(prestamo, politica): Sancion [0..1]
+    + validarLimites(rol, tipoItem, periodo, activos): boolean
+  }
+}
+
+' =====================================================
+' ============ Composición dentro de agregados (con cardinalidad) ============
+Usuario "1" *-- "1" Perfil
+Perfil "1" *-- "1" DatosContacto
+
+
+Reserva "1" *-- "1" FranjaHoraria
+Prestamo "1" *-- "1" FranjaHoraria : periodo
+Prestamo "1" *-- "1" Garantia
+Prestamo "1" *-- "0..1" Entrega
+Prestamo "1" *-- "0..1" Devolucion
+Entrega ..> EstadoFisico : Shared Kernel
+Devolucion ..> EstadoFisico : Shared Kernel
+
+Sancion "1" *-- "1" Penalizacion
+
+' ============ Referencias por identidad (entre agregados / contextos) ============
+Reserva "0..*" ..> "1" Usuario : usuarioId
+Reserva "0..*" ..> "1" ItemInventario : itemId
+Prestamo "0..*" ..> "1" Usuario : usuarioId,\nadminId
+Prestamo "0..*" ..> "1" ItemInventario : itemId\n(máx. 1 activo)
+Prestamo "0..1" ..> "0..1" Reserva : reservaId
+Sancion "0..*" ..> "1" Prestamo : prestamoId
+Sancion "0..*" ..> "1" Usuario : usuarioSancionadoId,\nadminId
+PoliticaPrestamo "0..*" ..> "1" Rol : rol
+
+' ============ Servicios de dominio ============
+ValidadorDisponibilidadService ..> Reserva : valida
+ValidadorDisponibilidadService ..> Prestamo : valida
+EvaluadorPoliticasService ..> Sancion : genera
+EvaluadorPoliticasService ..> PoliticaPrestamo : lee reglas
+Prestamo ..> PoliticaPrestamo : consulta límites\n(rol, TipoItem)
+
+' ============ Notas de invariantes ============
+note bottom of Prestamo
+  <b>Invariantes</b>
+  • Máx. 1 préstamo activo (AUTORIZADO o EN_CURSO) por itemId
+  • Devolucion solo existe si ya existe Entrega
+  • autorizar / rechazar: solo ADMINISTRADOR_SISTEMA (RNF-01)
+  • Transiciones válidas: ver diagrama de estados
+end note
+
+note bottom of Reserva
+  <b>Invariante RNF-02</b>
+  Sin solapamiento de FranjaHoraria para un mismo itemId.
+  Doble defensa: dominio (ValidadorDisponibilidadService)
+  + restricción EXCLUDE en BD + campo version.
+end note
+
+note bottom of Usuario
+  Si estadoCuenta = SUSPENDIDA no puede
+  reservar ni solicitar préstamos.
+end note
+
+legend right
+  <b>Leyenda</b>
+  *-- composición (mismo agregado)
+  ..> referencia por ID / dependencia
+  Eventos entre contextos: ver diagrama de eventos
+  Cardinalidad en cada extremo de la relación
+endlegend
+@enduml

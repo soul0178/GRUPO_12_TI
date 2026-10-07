@@ -1,0 +1,50 @@
+@startuml eventos_contextos_v2
+title Mapa de Contextos y Eventos de Dominio – Sistema de Préstamos EPCC
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam ArrowFontSize 11
+skinparam rectangle {
+  BackgroundColor #FFF2CC
+  BorderColor #444444
+}
+skinparam queue {
+  BackgroundColor #F8CECC
+  BorderColor #444444
+}
+
+rectangle "Circulacion_Prestamos_Reservas\n(Core Domain)\n<b>Prestamo / Reserva</b>" as CIR
+rectangle "Catalogo_Inventario\n(Soporte)\n<b>ItemInventario</b>" as CAT
+rectangle "Politicas_Sanciones\n(Soporte)\n<b>Sancion / PoliticaPrestamo</b>" as POL
+rectangle "IAM_Usuarios\n(Genérico)\n<b>Usuario</b>" as IAM
+rectangle "Historial (read model)\n<b>HistorialTransaccion</b>" as HIS
+
+queue "PrestamoEntregado" as E1
+queue "PrestamoDevuelto" as E2
+queue "PrestamoVencido" as E3
+queue "SancionAplicada" as E4
+queue "SancionCondonada" as E5
+
+CIR --> E1 : publica
+CIR --> E2 : publica
+CIR --> E3 : publica (job programado)
+E1 --> CAT : marcarPrestado()
+E2 --> CAT : marcarDisponible()\nactualizarEstadoFisico()
+E2 --> POL : evaluar retraso / daño
+E3 --> POL : evaluar retraso
+E1 --> HIS : registra
+E2 --> HIS : registra
+POL --> E4 : publica
+POL --> E5 : publica
+E4 --> IAM : suspender()
+E5 --> IAM : reactivar()
+
+CIR ..> IAM : consulta por UsuarioId\n(¿puede prestar?)
+CIR ..> CAT : consulta por ItemId\n(¿disponible?)
+CIR ..> POL : consulta PoliticaPrestamo\n(plazo y límites)
+
+note bottom of E3
+  Emitido por un proceso programado (scheduler) que
+  detecta préstamos EN_CURSO cuya FranjaHoraria ya terminó (RF-04).
+end note
+@enduml

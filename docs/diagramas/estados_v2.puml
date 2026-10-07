@@ -1,0 +1,33 @@
+@startuml estados_v2
+title Máquinas de Estado – Prestamo y Reserva
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam state {
+  BackgroundColor #FFF2CC
+  BorderColor #444444
+}
+
+state "Prestamo" as P {
+  [*] --> SOLICITADO : solicitar()
+  SOLICITADO --> AUTORIZADO : autorizar(adminId)\n[solo ADMINISTRADOR_SISTEMA]
+  SOLICITADO --> RECHAZADO : rechazar(adminId, motivo)
+  AUTORIZADO --> EN_CURSO : registrarSalida(Entrega)
+  EN_CURSO --> DEVUELTO : registrarDevolucion(Devolucion)
+  RECHAZADO --> [*]
+  DEVUELTO --> [*]
+}
+
+state "Reserva" as R {
+  [*] --> PENDIENTE : crear()
+  PENDIENTE --> CONFIRMADA : confirmar()\n[sin solapamiento]
+  PENDIENTE --> CANCELADA : cancelar()
+  CONFIRMADA --> CANCELADA : cancelar()
+  PENDIENTE --> EXPIRADA : expirar()
+  CONFIRMADA --> EXPIRADA : expirar()\n[pasó la franja sin retiro]
+  CONFIRMADA --> CONVERTIDA : marcarConvertida(prestamoId)
+  CANCELADA --> [*]
+  EXPIRADA --> [*]
+  CONVERTIDA --> [*]
+}
+@enduml

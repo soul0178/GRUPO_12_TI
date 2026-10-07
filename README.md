@@ -10,7 +10,7 @@ Diseño guiado por el dominio (DDD) como monolito modular. Ver `docs/` para el i
 ## Levantar el backend
 ```bash
 git clone <URL-DEL-REPOSITORIO>
-cd prestamos-epcc/backend
+cd ~/GRUPO_12_TI/backend
 python -m venv .venv
 # Windows: .venv\Scripts\activate    |   Linux/Mac: source .venv/bin/activate
 pip install -r requirements-dev.txt
@@ -26,7 +26,7 @@ python -m scripts.crear_admin --correo admin@unsa.edu.pe --password "ClaveSegura
 
 ## Levantar el frontend
 ```bash
-cd frontend
+cd ~/GRUPO_12_TI/frontend
 cp .env.example .env        # Windows: copy .env.example .env
 npm install
 npm run dev                 # http://localhost:5173

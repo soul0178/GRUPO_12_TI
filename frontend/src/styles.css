@@ -19,3 +19,18 @@ button.secundario { background: transparent; border: 1px solid #fff; padding: 0.
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 th, td { text-align: left; padding: 0.55rem; border-bottom: 1px solid #e3e7ee; }
 th { color: var(--azul); }
+
+.fila-form { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: flex-end; }
+.fila-form label { flex: 1 1 130px; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.neutro { background: #e3e7ee; color: var(--texto); }
+button.neutro:hover:not(:disabled) { background: #d3d9e3; }
+button.peligro { background: #b3261e; }
+button.peligro:hover:not(:disabled) { background: #8f1f19; }
+td.acciones { display: flex; gap: 0.4rem; }
+tr.apagada { opacity: 0.5; }
+.insignia { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; background: #e3e7ee; }
+.insignia.DISPONIBLE, .insignia.CONFIRMADA { background: #d6f0de; color: #1b7a3d; }
+.insignia.PRESTADO, .insignia.PENDIENTE { background: #fdeccc; color: #8a5a00; }
+.insignia.EN_MANTENIMIENTO, .insignia.EXPIRADA { background: #ece6f5; color: #5a3d8a; }
+.insignia.DADO_DE_BAJA, .insignia.CANCELADA { background: #f6d5d2; color: #b3261e; }

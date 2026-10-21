@@ -6,6 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.catalogo_inventario.presentation.routers import admin_items_router, items_router
+from app.circulacion.presentation.routers import (
+    admin_reservas_router, disponibilidad_router, reservas_router,
+)
 from app.db_init import crear_tablas
 from app.iam_usuarios.presentation.routers import admin_router, auth_router, usuarios_router
 from app.shared.config import get_settings
@@ -21,7 +25,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title=settings.app_name, version="0.3.0", lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="0.5.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +38,11 @@ registrar_manejadores(app)
 app.include_router(auth_router)
 app.include_router(usuarios_router)
 app.include_router(admin_router)
+app.include_router(items_router)
+app.include_router(admin_items_router)
+app.include_router(reservas_router)
+app.include_router(disponibilidad_router)
+app.include_router(admin_reservas_router)
 
 
 @app.get("/health", tags=["sistema"])

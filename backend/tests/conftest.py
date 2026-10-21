@@ -5,6 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.catalogo_inventario.infrastructure import modelos as _m_cat  # noqa: F401
+from app.circulacion.infrastructure import modelos as _m_cir  # noqa: F401
 from app.iam_usuarios.application.dtos import RegistroDTO
 from app.iam_usuarios.application.usuario_app_service import UsuarioAppService
 from app.iam_usuarios.domain.value_objects import Rol
@@ -74,3 +76,14 @@ def admin_headers(client, servicio):
     servicio.registrar(registro("admin@unsa.edu.pe"), rol=Rol.ADMINISTRADOR_SISTEMA)
     r = client.post("/auth/login", json={"correo_institucional": "admin@unsa.edu.pe", "password": "Clave12345"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+@pytest.fixture()
+def crear_item(client, admin_headers):
+    """Da de alta un ítem como administrador y devuelve su JSON."""
+    def _crear(codigo="LAP-001", nombre="Laptop Dell", tipo="EQUIPO", **extra):
+        r = client.post("/admin/items", json={"codigo": codigo, "nombre": nombre, "tipo": tipo, **extra},
+                        headers=admin_headers)
+        assert r.status_code == 201, r.text
+        return r.json()
+    return _crear

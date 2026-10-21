@@ -35,4 +35,25 @@ export const api = {
   actualizarPerfil: (d) => pedir("/usuarios/me/perfil", { metodo: "PUT", cuerpo: d }),
   listarUsuarios: () => pedir("/admin/usuarios"),
   cambiarRol: (id, rol) => pedir(`/admin/usuarios/${id}/rol`, { metodo: "PUT", cuerpo: { rol } }),
+
+  // Catálogo (Fase 2)
+  listarItems: (tipo) => pedir(`/items${tipo ? `?tipo=${tipo}` : ""}`),
+  obtenerItem: (id) => pedir(`/items/${id}`),
+  listarItemsAdmin: () => pedir("/admin/items"),
+  altaItem: (d) => pedir("/admin/items", { metodo: "POST", cuerpo: d }),
+  modificarItem: (id, d) => pedir(`/admin/items/${id}`, { metodo: "PUT", cuerpo: d }),
+  estadoFisico: (id, estado_fisico) => pedir(`/admin/items/${id}/estado-fisico`, { metodo: "PUT", cuerpo: { estado_fisico } }),
+  bajaItem: (id) => pedir(`/admin/items/${id}`, { metodo: "DELETE" }),
+
+  // Reservas (Fase 3)
+  disponibilidad: (itemId, desde, hasta) =>
+    pedir(`/items/${itemId}/disponibilidad?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`),
+  reservar: (d) => pedir("/reservas", { metodo: "POST", cuerpo: d }),
+  misReservas: () => pedir("/reservas/mias"),
+  cancelarReserva: (id) => pedir(`/reservas/${id}`, { metodo: "DELETE" }),
+  todasReservas: () => pedir("/admin/reservas"),
 };
+
+// Todo el backend trabaja en UTC: se envía ISO UTC y se muestra en hora local.
+export const aISO = (fecha, hora) => new Date(`${fecha}T${hora}`).toISOString();
+export const hora = (iso) => new Date(iso.endsWith("Z") ? iso : `${iso}Z`).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" });

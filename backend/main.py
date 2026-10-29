@@ -8,14 +8,14 @@ Documentación:  http://localhost:8000/docs
 
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from database import get_connection
+from database import crear_tablas, get_connection
 from security import (
     create_access_token,
     get_usuario_actual,
@@ -24,6 +24,8 @@ from security import (
 )
 
 app = FastAPI(title="Sistema de Préstamos EPCC - UNSA")
+
+crear_tablas()  # crea las tablas que falten (incluye solicitudes_prestamo)
 
 # ---------------------------------------------------------------------------
 # CORS: permite que el frontend React (Vite: 5173 / CRA: 3000) consuma la API
@@ -38,6 +40,10 @@ app.add_middleware(
 
 # Atajo para endpoints exclusivos del administrador (RN-03)
 SOLO_ADMIN = Depends(requerir_roles("ADMINISTRADOR_SISTEMA"))
+
+# Estudiantes y docentes. exigir_activa=False: el endpoint valida el estado de la
+# cuenta por su cuenta para poder responder 400 (en vez del 403 genérico).
+SOLO_SOLICITANTE = Depends(requerir_roles("ESTUDIANTE", "DOCENTE", exigir_activa=False))
 
 FORMATO_FECHA = "%Y-%m-%d %H:%M:%S"  # formato único con el que se guardan las fechas en SQLite
 
@@ -139,14 +145,6 @@ class ItemActualizar(BaseModel):
     estado_fisico: Optional[Literal["BUENO", "REGULAR", "DANADO"]] = None
     # DADO_DE_BAJA solo vía DELETE; PRESTADO solo vía /entrega
     disponibilidad: Optional[Literal["DISPONIBLE", "EN_MANTENIMIENTO"]] = None
-
-
-class PrestamoSolicitar(BaseModel):
-    item_id: int
-    fecha_inicio: datetime
-    fecha_fin: datetime
-    garantia: str = ""
-    reserva_id: Optional[int] = None  # opcional: convierte una reserva CONFIRMADA en préstamo
 
 
 class DevolucionIn(BaseModel):
@@ -299,62 +297,8 @@ def baja_logica_item(item_id: int, admin: dict = SOLO_ADMIN):
 
 
 # ===========================================================================
-# MÓDULO PRÉSTAMOS
+# MÓDULO PRÉSTAMOS - 
 # ===========================================================================
-@app.post("/api/v1/prestamos/solicitar", status_code=201)
-def solicitar_prestamo(datos: PrestamoSolicitar, usuario: dict = Depends(get_usuario_actual)):
-    """Crea un préstamo en estado SOLICITADO validando RN-02 y RN-01."""
-
-    # --- RN-02: bloqueo por suspensión ---
-    # (get_usuario_actual ya rechaza cuentas no ACTIVAS; se repite aquí a propósito
-    #  para que la regla quede visible y se evalúe directamente en este endpoint)
-    if usuario["estado_cuenta"] == "SUSPENDIDA":
-        raise HTTPException(403, "Cuenta SUSPENDIDA: no puede solicitar préstamos")
-
-    inicio = normalizar_fecha(datos.fecha_inicio)
-    fin = normalizar_fecha(datos.fecha_fin)
-    if fin <= inicio:
-        raise HTTPException(400, "fecha_fin debe ser posterior a fecha_inicio")
-
-    with conexion() as db:
-        # El ítem debe existir y estar en condiciones de prestarse
-        item = obtener_item_o_404(db, datos.item_id)
-        if item["disponibilidad"] in ("DADO_DE_BAJA", "EN_MANTENIMIENTO"):
-            raise HTTPException(409, f"El ítem no está disponible ({item['disponibilidad']})")
-
-        # Si viene una reserva: debe ser del usuario, estar CONFIRMADA y ser del mismo ítem
-        if datos.reserva_id is not None:
-            # SQL: SELECT * FROM reservas WHERE id = ?
-            reserva = db.execute("SELECT * FROM reservas WHERE id = ?", (datos.reserva_id,)).fetchone()
-            if (
-                reserva is None
-                or reserva["usuario_id"] != usuario["id"]
-                or reserva["item_id"] != datos.item_id
-                or reserva["estado"] != "CONFIRMADA"
-            ):
-                raise HTTPException(409, "La reserva no existe, no es suya, es de otro ítem o no está CONFIRMADA")
-
-        # --- RN-01: sin solapamiento (la reserva que se convierte no cuenta como choque) ---
-        if hay_solapamiento(db, datos.item_id, inicio, fin, excluir_reserva_id=datos.reserva_id):
-            raise HTTPException(409, "El ítem ya está reservado o prestado en esa franja horaria")
-
-        # SQL: INSERT INTO prestamos (...) VALUES (..., 'SOLICITADO')
-        cursor = db.execute(
-            """INSERT INTO prestamos
-               (usuario_id, item_id, reserva_id, fecha_inicio, fecha_fin, garantia, estado)
-               VALUES (?, ?, ?, ?, ?, ?, 'SOLICITADO')""",
-            (usuario["id"], datos.item_id, datos.reserva_id, inicio, fin, datos.garantia),
-        )
-        prestamo_id = cursor.lastrowid
-
-        # Máquina de estados de Reserva: CONFIRMADA -> CONVERTIDA
-        if datos.reserva_id is not None:
-            # SQL: UPDATE reservas SET estado = 'CONVERTIDA' WHERE id = ?
-            db.execute("UPDATE reservas SET estado = 'CONVERTIDA' WHERE id = ?", (datos.reserva_id,))
-
-    return {"id": prestamo_id, "estado": "SOLICITADO"}
-
-
 @app.put("/api/v1/admin/prestamos/{prestamo_id}/autorizar")
 def autorizar_prestamo(prestamo_id: int, admin: dict = SOLO_ADMIN):
     """SOLICITADO -> AUTORIZADO (RN-03)."""
@@ -369,22 +313,6 @@ def autorizar_prestamo(prestamo_id: int, admin: dict = SOLO_ADMIN):
             (admin["id"], prestamo_id),
         )
     return {"id": prestamo_id, "estado": "AUTORIZADO"}
-
-
-@app.put("/api/v1/admin/prestamos/{prestamo_id}/rechazar")
-def rechazar_prestamo(prestamo_id: int, admin: dict = SOLO_ADMIN):
-    """SOLICITADO -> RECHAZADO (RN-03). Complementa a /autorizar según la máquina de estados."""
-    with conexion() as db:
-        prestamo = obtener_prestamo_o_404(db, prestamo_id)
-        if prestamo["estado"] != "SOLICITADO":
-            raise HTTPException(409, f"Transición inválida: el préstamo está {prestamo['estado']}")
-
-        # SQL: UPDATE prestamos SET estado = 'RECHAZADO', autorizado_por_admin_id = ? WHERE id = ?
-        db.execute(
-            "UPDATE prestamos SET estado = 'RECHAZADO', autorizado_por_admin_id = ? WHERE id = ?",
-            (admin["id"], prestamo_id),
-        )
-    return {"id": prestamo_id, "estado": "RECHAZADO"}
 
 
 @app.put("/api/v1/admin/prestamos/{prestamo_id}/entrega")
@@ -466,4 +394,203 @@ def devolver_prestamo(prestamo_id: int, datos: DevolucionIn, admin: dict = SOLO_
         "item_disponibilidad": nueva_disponibilidad,
         "sanciones_generadas": [{"infraccion": t, "penalizacion": p} for t, p in infracciones],
         "usuario_suspendido": len(infracciones) > 0,
+    }
+
+
+# ===========================================================================
+# MÓDULO SOLICITUDES DE PRÉSTAMO (tabla `solicitudes_prestamo`)
+# Estados: PENDIENTE -> APROBADO -> DEVUELTO | PENDIENTE -> RECHAZADO
+# ===========================================================================
+MAX_SOLICITUDES_ACTIVAS = 2  # 'PENDIENTE' o 'APROBADO' simultáneas por usuario
+
+
+class SolicitudCrear(BaseModel):
+    item_id: int
+    fecha_inicio: date
+    fecha_fin_prevista: date
+    observaciones: Optional[str] = None
+
+
+class ObservacionIn(BaseModel):
+    """Cuerpo opcional para aprobar / rechazar / devolver."""
+    observaciones: Optional[str] = None
+
+
+def obtener_solicitud_o_404(db, solicitud_id: int) -> sqlite3.Row:
+    # SQL: SELECT * FROM solicitudes_prestamo WHERE id = ?
+    fila = db.execute("SELECT * FROM solicitudes_prestamo WHERE id = ?", (solicitud_id,)).fetchone()
+    if fila is None:
+        raise HTTPException(404, "Solicitud no encontrada")
+    return fila
+
+
+@app.post("/api/v1/prestamos/solicitar", status_code=201)
+def solicitar_prestamo(datos: SolicitudCrear, usuario: dict = SOLO_SOLICITANTE):
+    """(Estudiante/Docente) Crea una solicitud en estado PENDIENTE."""
+    if datos.fecha_fin_prevista < datos.fecha_inicio:
+        raise HTTPException(400, "fecha_fin_prevista no puede ser anterior a fecha_inicio")
+
+    # Regla 1: la cuenta debe estar ACTIVA (estado leído de la BD en esta misma petición)
+    if usuario["estado_cuenta"] != "ACTIVA":
+        raise HTTPException(400, f"Cuenta {usuario['estado_cuenta']}: no puede solicitar préstamos")
+
+    with conexion() as db:
+        # Regla 2: el ítem debe estar DISPONIBLE
+        item = obtener_item_o_404(db, datos.item_id)
+        if item["disponibilidad"] != "DISPONIBLE":
+            raise HTTPException(400, f"El ítem no está disponible ({item['disponibilidad']})")
+
+        # Regla 3: máximo 2 solicitudes activas por usuario
+        # SQL: SELECT COUNT(*) FROM solicitudes_prestamo WHERE usuario_id = ? AND estado IN (...)
+        activas = db.execute(
+            """SELECT COUNT(*) AS total FROM solicitudes_prestamo
+               WHERE usuario_id = ? AND estado IN ('PENDIENTE', 'APROBADO')""",
+            (usuario["id"],),
+        ).fetchone()["total"]
+        if activas >= MAX_SOLICITUDES_ACTIVAS:
+            raise HTTPException(
+                400, f"Ya tiene {MAX_SOLICITUDES_ACTIVAS} solicitudes activas (PENDIENTE o APROBADO)"
+            )
+
+        # SQL: INSERT INTO solicitudes_prestamo (...) VALUES (...)  -- estado queda en 'PENDIENTE'
+        cursor = db.execute(
+            """INSERT INTO solicitudes_prestamo
+               (usuario_id, item_id, fecha_inicio, fecha_fin_prevista, observaciones)
+               VALUES (?, ?, ?, ?, ?)""",
+            (
+                usuario["id"],
+                datos.item_id,
+                datos.fecha_inicio.isoformat(),
+                datos.fecha_fin_prevista.isoformat(),
+                datos.observaciones,
+            ),
+        )
+        solicitud_id = cursor.lastrowid
+
+    return {"id": solicitud_id, "estado": "PENDIENTE"}
+
+
+@app.get("/api/v1/prestamos/mis-solicitudes")
+def mis_solicitudes(usuario: dict = SOLO_SOLICITANTE):
+    """(Estudiante/Docente) Historial propio, de la más reciente a la más antigua."""
+    with conexion() as db:
+        # SQL: solicitudes del usuario + datos del ítem (JOIN)
+        filas = db.execute(
+            """SELECT s.id, s.item_id, i.codigo_patrimonial, i.nombre AS item_nombre,
+                      s.fecha_solicitud, s.fecha_inicio, s.fecha_fin_prevista,
+                      s.fecha_devolucion_real, s.estado, s.observaciones
+               FROM solicitudes_prestamo s
+               JOIN items_inventario i ON i.id = s.item_id
+               WHERE s.usuario_id = ?
+               ORDER BY s.fecha_solicitud DESC, s.id DESC""",
+            (usuario["id"],),
+        ).fetchall()
+    return [dict(f) for f in filas]
+
+
+@app.get("/api/v1/admin/prestamos")
+def listar_solicitudes_admin(
+    estado: Optional[Literal["PENDIENTE", "APROBADO", "RECHAZADO", "DEVUELTO", "CANCELADO"]] = None,
+    admin: dict = SOLO_ADMIN,
+):
+    """(Admin) Lista todas las solicitudes. Filtro opcional: ?estado=PENDIENTE"""
+    # SQL: solicitudes + datos del usuario y del ítem (JOIN)
+    consulta = """SELECT s.id, s.usuario_id, u.nombre AS usuario_nombre, u.email AS usuario_email,
+                         s.item_id, i.codigo_patrimonial, i.nombre AS item_nombre,
+                         s.fecha_solicitud, s.fecha_inicio, s.fecha_fin_prevista,
+                         s.fecha_devolucion_real, s.estado, s.observaciones
+                  FROM solicitudes_prestamo s
+                  JOIN usuarios u ON u.id = s.usuario_id
+                  JOIN items_inventario i ON i.id = s.item_id"""
+    parametros = []
+    if estado:
+        consulta += " WHERE s.estado = ?"
+        parametros.append(estado)
+    consulta += " ORDER BY s.fecha_solicitud DESC, s.id DESC"
+
+    with conexion() as db:
+        filas = db.execute(consulta, parametros).fetchall()
+    return [dict(f) for f in filas]
+
+
+@app.put("/api/v1/admin/prestamos/{solicitud_id}/aprobar")
+def aprobar_solicitud(solicitud_id: int, datos: Optional[ObservacionIn] = None, admin: dict = SOLO_ADMIN):
+    """(Admin) PENDIENTE -> APROBADO y el ítem pasa a PRESTADO."""
+    observaciones = datos.observaciones if datos else None
+
+    with conexion() as db:
+        solicitud = obtener_solicitud_o_404(db, solicitud_id)
+        if solicitud["estado"] != "PENDIENTE":
+            raise HTTPException(409, f"Transición inválida: la solicitud está {solicitud['estado']}")
+
+        # Dos usuarios pueden haber pedido el mismo ítem mientras estaba DISPONIBLE;
+        # solo se puede aprobar la primera, así que se revisa de nuevo aquí.
+        item = obtener_item_o_404(db, solicitud["item_id"])
+        if item["disponibilidad"] != "DISPONIBLE":
+            raise HTTPException(409, f"No se puede aprobar: el ítem está {item['disponibilidad']}")
+
+        # SQL: UPDATE solicitudes_prestamo SET estado = 'APROBADO' ...
+        db.execute(
+            "UPDATE solicitudes_prestamo SET estado = 'APROBADO', observaciones = COALESCE(?, observaciones) WHERE id = ?",
+            (observaciones, solicitud_id),
+        )
+        # SQL: UPDATE items_inventario SET disponibilidad = 'PRESTADO' WHERE id = ?
+        db.execute(
+            "UPDATE items_inventario SET disponibilidad = 'PRESTADO' WHERE id = ?",
+            (solicitud["item_id"],),
+        )
+
+    return {"id": solicitud_id, "estado": "APROBADO", "item_disponibilidad": "PRESTADO"}
+
+
+@app.put("/api/v1/admin/prestamos/{solicitud_id}/rechazar")
+def rechazar_solicitud(solicitud_id: int, datos: Optional[ObservacionIn] = None, admin: dict = SOLO_ADMIN):
+    """(Admin) PENDIENTE -> RECHAZADO. El ítem no cambia (sigue DISPONIBLE)."""
+    observaciones = datos.observaciones if datos else None
+
+    with conexion() as db:
+        solicitud = obtener_solicitud_o_404(db, solicitud_id)
+        if solicitud["estado"] != "PENDIENTE":
+            raise HTTPException(409, f"Transición inválida: la solicitud está {solicitud['estado']}")
+
+        # SQL: UPDATE solicitudes_prestamo SET estado = 'RECHAZADO' ...
+        db.execute(
+            "UPDATE solicitudes_prestamo SET estado = 'RECHAZADO', observaciones = COALESCE(?, observaciones) WHERE id = ?",
+            (observaciones, solicitud_id),
+        )
+
+    return {"id": solicitud_id, "estado": "RECHAZADO"}
+
+
+@app.put("/api/v1/admin/prestamos/{solicitud_id}/devolver")
+def devolver_solicitud(solicitud_id: int, datos: Optional[ObservacionIn] = None, admin: dict = SOLO_ADMIN):
+    """(Admin) APROBADO -> DEVUELTO, registra la fecha real y libera el ítem."""
+    observaciones = datos.observaciones if datos else None
+
+    with conexion() as db:
+        solicitud = obtener_solicitud_o_404(db, solicitud_id)
+        if solicitud["estado"] != "APROBADO":
+            raise HTTPException(409, f"Transición inválida: la solicitud está {solicitud['estado']}")
+
+        hoy = date.today().isoformat()
+
+        # SQL: UPDATE solicitudes_prestamo SET estado = 'DEVUELTO', fecha_devolucion_real = ? ...
+        db.execute(
+            """UPDATE solicitudes_prestamo
+               SET estado = 'DEVUELTO', fecha_devolucion_real = ?,
+                   observaciones = COALESCE(?, observaciones)
+               WHERE id = ?""",
+            (hoy, observaciones, solicitud_id),
+        )
+        # SQL: UPDATE items_inventario SET disponibilidad = 'DISPONIBLE' WHERE id = ?
+        db.execute(
+            "UPDATE items_inventario SET disponibilidad = 'DISPONIBLE' WHERE id = ?",
+            (solicitud["item_id"],),
+        )
+
+    return {
+        "id": solicitud_id,
+        "estado": "DEVUELTO",
+        "fecha_devolucion_real": hoy,
+        "item_disponibilidad": "DISPONIBLE",
     }

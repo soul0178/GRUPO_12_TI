@@ -1,0 +1,22 @@
+# Desarrollo local: usa la base de docker-compose.yml.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5440/loans}
+    username: ${DB_USER:loans}
+    password: ${DB_PASSWORD:loans}
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
+  # Clave SOLO de desarrollo; JWT_SECRET del entorno la reemplaza.
+  jwt:
+    secret: ${JWT_SECRET:clave-solo-para-desarrollo-local-epcc-2026-no-usar-en-produccion}
+  # Administrador de pruebas que se crea al arrancar en dev si no existe (DevAdminInitializer).
+  dev-admin:
+    email: admin@epcc.unsa.edu.pe
+    password: Admin1234
+    document-number: "00000000"
+
+logging:
+  level:
+    edu.unsa.epcc.loans: DEBUG

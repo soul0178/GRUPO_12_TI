@@ -1,16 +1,13 @@
-# Python
-__pycache__/
-*.pyc
-.venv/
-venv/
-.pytest_cache/
-# Secretos y BD local
+# Backend
+backend/target/
+# Frontend
+frontend/node_modules/
+frontend/dist/
+# Secretos y locales
 .env
-*.db
-# Node
-node_modules/
-dist/
+.env.local
 # Editor / SO
-.vscode/
 .idea/
+.vscode/
+*.iml
 .DS_Store

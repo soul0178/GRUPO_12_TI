@@ -1,0 +1,6 @@
+# Pruebas: la conexión la aporta Testcontainers (@ServiceConnection), no se configura aquí.
+app:
+  cors:
+    allowed-origins: http://localhost:5173
+  jwt:
+    secret: clave-de-pruebas-automaticas-con-mas-de-32-caracteres

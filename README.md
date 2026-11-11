@@ -1,79 +1,78 @@
 # Sistema de Préstamos EPCC
 
-Proyecto del Grupo 12 – Escuela Profesional de Ciencia de la Computación (UNSA).
-Diseño guiado por el dominio (DDD) como monolito modular. Ver `docs/` para el informe.
+Sistema de préstamo y reserva de equipos, libros y objetos de la EPCC (UNSA). Grupo 12.
 
-## Requisitos
-- Python 3.12+
-- Git
+| Carpeta | Contenido |
+|---|---|
+| `backend/` | API REST: Java 21, Spring Boot 3.5, PostgreSQL 16, Flyway, JWT |
+| `frontend/` | Web: React 19 + TypeScript, Vite, Tailwind, TanStack Query |
+| `docs/` | Informes (PDF) y diagramas UML (`.puml` + imagen) |
+| `docker-compose.yml` | Base de datos PostgreSQL para desarrollo |
 
-## Levantar el backend
+Avance: módulos M0–M5 (base, usuarios, inventario, sanciones, préstamos, reservas). Pendiente: M6 (historial y vencidos).
+
+## Ejecutar en Ubuntu (22.04 / 24.04)
+
+### 1. Requisitos
 ```bash
-git clone <URL-DEL-REPOSITORIO>
-cd ~/GRUPO_12_TI/backend
-python -m venv .venv
-# Windows: .venv\Scripts\activate    |   Linux/Mac: source .venv/bin/activate
-pip install -r requirements-dev.txt
-cp .env.example .env        # Windows: copy .env.example .env
-uvicorn app.main:app --reload
+sudo apt update
+sudo apt install -y git curl openjdk-21-jdk ca-certificates
+# Node 22
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+# Docker + Compose
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker $USER      # cerrar sesión y volver a entrar
 ```
-Abrir http://127.0.0.1:8000/health y http://127.0.0.1:8000/docs
+Verifica: `java -version` (21), `node -v` (22), `docker compose version`.
 
-### Crear el Administrador del Sistema (el registro público solo crea ESTUDIANTE)
+### 2. Base de datos
 ```bash
-python -m scripts.crear_admin --correo admin@unsa.edu.pe --password "ClaveSegura123"
+docker compose up -d          # desde la raíz del proyecto
+docker compose ps             # debe decir "healthy"
 ```
+PostgreSQL queda en `localhost:5440`, base `loans`, usuario `loans`, clave `loans`.
+**No hay que crear tablas a mano**: Flyway aplica las migraciones V1–V7 al arrancar el backend.
 
-## Levantar el frontend
-```bash
-cd ~/GRUPO_12_TI/frontend
-cp .env.example .env        # Windows: copy .env.example .env
-npm install
-npm run dev                 # http://localhost:5173
-```
-Generar una `SECRET_KEY` real en `backend/.env`:
-`python -c "import secrets; print(secrets.token_hex(32))"`
+Acceso manual: `docker exec -it loans-db psql -U loans -d loans`
+Reiniciar desde cero (borra datos): `docker compose down -v && docker compose up -d`
 
-## Pruebas
+### 3. Backend (terminal 1)
 ```bash
 cd backend
-pytest -v
+./mvnw spring-boot:run
+```
+- API: http://localhost:8080 · Swagger: http://localhost:8080/swagger-ui
+- Admin de pruebas (solo perfil `dev`): `admin@epcc.unsa.edu.pe` / `Admin1234`
+- Otro puerto: `SERVER_PORT=8095 ./mvnw spring-boot:run`
+
+### 4. Frontend (terminal 2)
+```bash
+cd frontend
+cp .env.example .env          # VITE_API_URL=http://localhost:8080/api
+npm install
+npm run dev
+```
+Abrir http://localhost:5173 e ingresar con el admin de pruebas.
+
+### Pruebas
+```bash
+cd backend  && ./mvnw verify    # 206 pruebas; requiere Docker activo (Testcontainers)
+cd frontend && npm test         # 102 pruebas
 ```
 
-## Estructura
+## Producción
+Perfil `prod`, sin valores por defecto; son obligatorias estas variables:
+`DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` (mín. 32 caracteres), `CORS_ALLOWED_ORIGINS`.
+```bash
+cd backend && ./mvnw -DskipTests package
+SPRING_PROFILES_ACTIVE=prod DB_URL=jdbc:postgresql://host:5432/loans DB_USER=... DB_PASSWORD=... \
+JWT_SECRET=... CORS_ALLOWED_ORIGINS=https://tu-dominio java -jar target/loans-0.0.1-SNAPSHOT.jar
+cd frontend && VITE_API_URL=https://tu-dominio/api npm run build   # sirve dist/ con nginx
 ```
-backend/app/<contexto>/{domain,application,infrastructure,presentation}
-backend/app/shared/   (config, base de datos, bus de eventos)
-frontend/             (React + Vite)
-docs/                 (informe y diagramas .puml / .png)
-```
-Contextos: `iam_usuarios`, `catalogo_inventario`, `circulacion`, `politicas_sanciones`.
 
-## Flujo de trabajo Git
-Rama `main` estable, `develop` de integración, ramas `feature/<fase>-<tarea>` por persona; todo entra por Pull Request con CI en verde.
-
-## API disponible
-| Método y ruta | Quién | Descripción |
-|---|---|---|
-| `POST /auth/register`, `POST /auth/login` | público | Registro (siempre ESTUDIANTE) y login JWT |
-| `GET /usuarios/me`, `PUT /usuarios/me/perfil` | autenticado | Perfil propio |
-| `GET /admin/usuarios`, `PUT /admin/usuarios/{id}/rol` | administrador | Usuarios y roles |
-| `GET /items?tipo=`, `GET /items/{id}` | autenticado | Catálogo (no muestra ítems dados de baja) |
-| `POST /admin/items`, `PUT /admin/items/{id}` | administrador | Alta y modificación de ítems |
-| `PUT /admin/items/{id}/estado-fisico`, `DELETE /admin/items/{id}` | administrador | Estado físico y baja lógica |
-| `GET /items/{id}/disponibilidad` | autenticado | Franjas ya ocupadas del ítem |
-| `POST /reservas`, `GET /reservas/mias`, `DELETE /reservas/{id}` | autenticado | Reservar, ver y cancelar (solo la propia; el admin cualquiera) |
-| `GET /admin/reservas` | administrador | Todas las reservas |
-
-Documentación interactiva en http://127.0.0.1:8000/docs. Todas las fechas viajan en UTC (ISO 8601); el frontend las muestra en hora local.
-
-## Avance
-- [x] Fase 0 – Cimientos (10 %)
-- [x] Fase 1 – IAM_Usuarios (25 %)
-- [x] Fase 2 – Catálogo (35 %)
-- [x] Fase 3 – Reservas, núcleo (55 %)
-- [ ] Fase 4 – Préstamos (75 %)
-
-Detalle del 55 % en `docs/Avance_55.md`.
-
-
+## Problemas frecuentes
+- **`permission denied` con docker**: falta `sudo usermod -aG docker $USER` y reiniciar sesión.
+- **Puerto 5440 u 8080 ocupado**: `sudo ss -ltnp | grep -E '5440|8080'`.
+- **Frontend sin datos / error CORS**: el backend debe estar en `dev` (permite `http://localhost:5173`).
+- **`./mvnw: Permission denied`**: `chmod +x backend/mvnw`.

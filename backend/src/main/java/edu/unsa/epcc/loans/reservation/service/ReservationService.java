@@ -58,7 +58,7 @@ public class ReservationService {
      * Crea una reserva del usuario sobre un ítem y un rango futuro. Lanza BusinessException si el usuario está
      * desactivado o sancionado, el rango es inválido o supera el plazo de la categoría, el ítem no se puede
      * reservar, el usuario llegó al límite de reservas pendientes + préstamos, o el rango se solapa con otra
-     * reserva o con el préstamo en curso del ítem.
+     * reserva o con el préstamo en curso del ítem. Tampoco se reserva en domingo (en hora de Lima).
      */
     @Transactional
     public ReservationResponse create(CreateReservationRequest request, Long userId) {
@@ -184,6 +184,9 @@ public class ReservationService {
         }
         if (!request.endAt().isAfter(request.startAt())) {
             throw new BusinessException("La fecha de fin debe ser posterior a la de inicio");
+        }
+        if (LimaTime.overlapsSunday(request.startAt(), request.endAt())) {
+            throw new BusinessException("No se pueden hacer reservas los domingos");
         }
         Duration max = Duration.ofHours(item.getCategory().getMaxLoanHours());
         if (Duration.between(request.startAt(), request.endAt()).compareTo(max) > 0) {

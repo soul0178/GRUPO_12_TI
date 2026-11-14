@@ -1,4 +1,4 @@
-import { formatDateTime, limaLocalToIso } from '@/shared/utils/dateFormat';
+import { formatDateTime, limaLocalToIso, rangeTouchesSunday } from '@/shared/utils/dateFormat';
 
 describe('formatDateTime', () => {
   it('muestra la hora de Lima (UTC-5) para un Instant en UTC', () => {
@@ -11,5 +11,27 @@ describe('formatDateTime', () => {
 describe('limaLocalToIso', () => {
   it('convierte una hora local de Lima a UTC sumando cinco horas', () => {
     expect(limaLocalToIso('2026-03-10T10:30')).toBe('2026-03-10T15:30:00.000Z');
+  });
+});
+
+describe('rangeTouchesSunday', () => {
+  // 10/03/2030 es domingo
+  it('detecta un rango dentro del domingo', () => {
+    expect(rangeTouchesSunday('2030-03-10T10:00', '2030-03-10T12:00')).toBe(true);
+  });
+
+  it('detecta un rango que entra o sale del domingo', () => {
+    expect(rangeTouchesSunday('2030-03-09T23:00', '2030-03-10T01:00')).toBe(true);
+    expect(rangeTouchesSunday('2030-03-10T23:00', '2030-03-11T01:00')).toBe(true);
+  });
+
+  it('permite sábado y lunes', () => {
+    expect(rangeTouchesSunday('2030-03-09T10:00', '2030-03-09T12:00')).toBe(false);
+    expect(rangeTouchesSunday('2030-03-11T10:00', '2030-03-11T12:00')).toBe(false);
+  });
+
+  it('un rango que termina a las 00:00 del domingo no lo toca', () => {
+    expect(rangeTouchesSunday('2030-03-09T22:00', '2030-03-10T00:00')).toBe(false);
+    expect(rangeTouchesSunday('2030-03-10T00:00', '2030-03-10T01:00')).toBe(true);
   });
 });

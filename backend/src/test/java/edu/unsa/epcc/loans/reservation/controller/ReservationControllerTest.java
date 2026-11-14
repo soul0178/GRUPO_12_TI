@@ -11,6 +11,7 @@ import edu.unsa.epcc.loans.inventory.entity.ItemStatus;
 import edu.unsa.epcc.loans.support.IntegrationTestBase;
 import edu.unsa.epcc.loans.support.TestItemFactory;
 import edu.unsa.epcc.loans.support.TestUserFactory;
+import edu.unsa.epcc.loans.support.WorkingDays;
 import edu.unsa.epcc.loans.user.entity.Role;
 import edu.unsa.epcc.loans.user.entity.User;
 import java.time.Duration;
@@ -38,7 +39,7 @@ class ReservationControllerTest extends IntegrationTestBase {
     }
 
     private Instant soon() {
-        return Instant.now().plus(Duration.ofHours(3));
+        return WorkingDays.safeStart(Instant.now().plus(Duration.ofHours(3)));
     }
 
     @ParameterizedTest

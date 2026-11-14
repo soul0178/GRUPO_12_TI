@@ -46,7 +46,7 @@ class LoanReservationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
-        clock.reset();
+        clock.resetOutsideSunday();
         manager = users.create(Role.MANAGER);
     }
 

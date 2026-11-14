@@ -104,4 +104,23 @@ describe('rutas de la aplicación', () => {
 
     expect(screen.getByRole('heading', { name: 'Página no encontrada' })).toBeInTheDocument();
   });
+
+  it('muestra Reportes al personal y lo oculta a un estudiante', () => {
+    loginAs('MANAGER');
+    const { unmount } = renderRoutes(routes, '/');
+    expect(screen.getByRole('link', { name: 'Reportes' })).toBeInTheDocument();
+    unmount();
+
+    loginAs('STUDENT');
+    renderRoutes(routes, '/');
+    expect(screen.queryByRole('link', { name: 'Reportes' })).not.toBeInTheDocument();
+  });
+
+  it('impide a un estudiante abrir los reportes', () => {
+    loginAs('STUDENT');
+
+    renderRoutes(routes, '/reports/users');
+
+    expect(screen.queryByRole('heading', { name: 'Reportes' })).not.toBeInTheDocument();
+  });
 });

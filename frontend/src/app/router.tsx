@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import { AppLayout } from '@/app/layout/AppLayout';
 import { ForbiddenPage } from '@/app/pages/ForbiddenPage';
@@ -11,6 +12,8 @@ import { ItemFormPage } from '@/features/inventory/pages/ItemFormPage';
 import { LoanListPage } from '@/features/loans/pages/LoanListPage';
 import { NewLoanPage } from '@/features/loans/pages/NewLoanPage';
 import { ReturnLoanPage } from '@/features/loans/pages/ReturnLoanPage';
+import { ItemHistoryPage } from '@/features/reports/pages/ItemHistoryPage';
+import { UserHistoryPage } from '@/features/reports/pages/UserHistoryPage';
 import { MyReservationsPage } from '@/features/reservations/pages/MyReservationsPage';
 import { NewReservationPage } from '@/features/reservations/pages/NewReservationPage';
 import { PolicySettingsPage } from '@/features/sanctions/pages/PolicySettingsPage';
@@ -53,6 +56,9 @@ export const routes: RouteObject[] = [
           { path: '/loans/new', element: <NewLoanPage /> },
           { path: '/loans/:id/return', element: <ReturnLoanPage /> },
           { path: '/sanctions', element: <SanctionsPage /> },
+          { path: '/reports', element: <Navigate to="/reports/users" replace /> },
+          { path: '/reports/users/:id?', element: <UserHistoryPage /> },
+          { path: '/reports/items/:id?', element: <ItemHistoryPage /> },
         ],
       },
     ],

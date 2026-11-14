@@ -13,13 +13,19 @@ const RESULTS_SIZE = 8;
 interface ItemPickerProps {
   selected: Item | null;
   onSelect: (item: Item | null) => void;
+  /** Si es false, busca entre todos los ítems sin importar su estado (reportes). Por defecto, solo disponibles. */
+  availableOnly?: boolean;
 }
 
-/** Busca entre los ítems disponibles por código o nombre y permite elegir uno para la entrega. */
-export function ItemPicker({ selected, onSelect }: ItemPickerProps) {
+/** Busca ítems por código o nombre y permite elegir uno (para la entrega o para un reporte). */
+export function ItemPicker({ selected, onSelect, availableOnly = true }: ItemPickerProps) {
   const [text, setText] = useState('');
   const debounced = useDebouncedValue(text, 300);
-  const items = useItems({ text: debounced, status: 'AVAILABLE' }, 0, RESULTS_SIZE);
+  const items = useItems(
+    { text: debounced, status: availableOnly ? 'AVAILABLE' : undefined },
+    0,
+    RESULTS_SIZE,
+  );
 
   if (selected) {
     return (
@@ -49,7 +55,7 @@ export function ItemPicker({ selected, onSelect }: ItemPickerProps) {
   return (
     <div className="space-y-2">
       <label htmlFor="item-search" className="block text-sm font-medium text-slate-700">
-        Buscar ítem disponible
+        {availableOnly ? 'Buscar ítem disponible' : 'Buscar ítem'}
       </label>
       <input
         id="item-search"
@@ -61,7 +67,11 @@ export function ItemPicker({ selected, onSelect }: ItemPickerProps) {
       />
       {items.isError && <Alert variant="error">{getErrorMessage(items.error)}</Alert>}
       {items.data && items.data.content.length === 0 && (
-        <p className="text-sm text-slate-500">No hay ítems disponibles con ese criterio.</p>
+        <p className="text-sm text-slate-500">
+          {availableOnly
+            ? 'No hay ítems disponibles con ese criterio.'
+            : 'No se encontraron ítems.'}
+        </p>
       )}
       {items.data && items.data.content.length > 0 && (
         <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-inset ring-slate-200">

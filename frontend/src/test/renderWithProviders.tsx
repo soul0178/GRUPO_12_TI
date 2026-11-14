@@ -23,8 +23,11 @@ export function renderWithProviders(ui: ReactElement, path = '/') {
   return renderRoutes([{ path: '*', element: ui }], path);
 }
 
-/** Renderiza un conjunto de rutas en memoria, empezando en `path`. */
-export function renderRoutes(routes: RouteObject[], path: string) {
+/** Renderiza un conjunto de rutas en memoria, empezando en `path` (con `state` opcional de navegación). */
+export function renderRoutes(
+  routes: RouteObject[],
+  path: string | { pathname: string; state?: unknown },
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   return render(

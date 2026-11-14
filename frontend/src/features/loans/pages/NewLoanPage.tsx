@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { useItem } from '@/features/inventory/hooks/useItems';
 import type { Item } from '@/features/inventory/types/inventory';
 import { ItemPicker } from '@/features/loans/components/ItemPicker';
 import { LoanForm } from '@/features/loans/components/LoanForm';
@@ -7,6 +8,8 @@ import type { LoanFormValues } from '@/features/loans/components/LoanForm';
 import { UserPicker } from '@/features/loans/components/UserPicker';
 import { useCreateLoan } from '@/features/loans/hooks/useLoanMutations';
 import type { Loan } from '@/features/loans/types/loan';
+import type { Reservation } from '@/features/reservations/types/reservation';
+import { useUserLookup } from '@/features/users/hooks/useUsers';
 import type { UserSummary } from '@/features/users/types/user';
 import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
@@ -18,8 +21,20 @@ import { formatDateTime } from '@/shared/utils/dateFormat';
 
 /** Pantalla donde el encargado registra la entrega de un ítem a un usuario (RF-04, RF-07). */
 export function NewLoanPage() {
-  const [user, setUser] = useState<UserSummary | null>(null);
-  const [item, setItem] = useState<Item | null>(null);
+  // Si se llega desde "Entregar" en una reserva, el usuario y el ítem vienen elegidos; el encargado puede cambiarlos.
+  const reservation = (useLocation().state as { reservation?: Reservation } | null)?.reservation;
+  const prefilledItem = useItem(reservation?.itemId);
+  const prefilledUsers = useUserLookup(reservation?.userEmail ?? '');
+  // undefined = sin tocar (vale la precarga); null = el encargado lo quitó
+  const [pickedUser, setPickedUser] = useState<UserSummary | null | undefined>(undefined);
+  const [pickedItem, setPickedItem] = useState<Item | null | undefined>(undefined);
+  const user =
+    pickedUser !== undefined
+      ? pickedUser
+      : (prefilledUsers.data?.find((candidate) => candidate.id === reservation?.userId) ?? null);
+  const item = pickedItem !== undefined ? pickedItem : (prefilledItem.data ?? null);
+  const fromReservation =
+    reservation !== undefined && pickedUser === undefined && pickedItem === undefined;
   const [created, setCreated] = useState<Loan | null>(null);
   const createLoan = useCreateLoan();
 
@@ -51,8 +66,8 @@ export function NewLoanPage() {
 
   function startAnother() {
     setCreated(null);
-    setUser(null);
-    setItem(null);
+    setPickedUser(null);
+    setPickedItem(null);
     createLoan.reset();
   }
 
@@ -81,8 +96,11 @@ export function NewLoanPage() {
         description="Elija al usuario y el ítem, y complete los datos."
       />
       <Card className="max-w-3xl space-y-6 p-6">
-        <UserPicker selected={user} onSelect={(value) => changeSelection(setUser, value)} />
-        <ItemPicker selected={item} onSelect={(value) => changeSelection(setItem, value)} />
+        {fromReservation && reservation && (
+          <Alert variant="info">{`Entrega de la reserva de ${reservation.userFullName}: ${reservation.itemCode}, del ${formatDateTime(reservation.startAt)} al ${formatDateTime(reservation.endAt)}.`}</Alert>
+        )}
+        <UserPicker selected={user} onSelect={(value) => changeSelection(setPickedUser, value)} />
+        <ItemPicker selected={item} onSelect={(value) => changeSelection(setPickedItem, value)} />
         {user && item && (
           <LoanForm
             requiresGuarantee={item.category.requiresGuarantee}

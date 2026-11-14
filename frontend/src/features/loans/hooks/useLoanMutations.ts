@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createLoan, returnLoan } from '@/features/loans/api/loansApi';
 import type { ReturnLoanRequest } from '@/features/loans/types/loan';
 
-/** Registra una entrega y refresca préstamos y catálogo (el ítem pasa a "Prestado"). */
+/** Registra una entrega y refresca préstamos, catálogo y reservas (la reserva del usuario pasa a "Cumplida"). */
 export function useCreateLoan() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -10,6 +10,7 @@ export function useCreateLoan() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['loans'] });
       void queryClient.invalidateQueries({ queryKey: ['items'] });
+      void queryClient.invalidateQueries({ queryKey: ['reservations'] });
     },
   });
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ReservationTabs } from '@/features/reservations/components/ReservationTabs';
 import { ReservationTable } from '@/features/reservations/components/ReservationTable';
 import { useCancelReservation } from '@/features/reservations/hooks/useReservationMutations';
 import { useMyReservations } from '@/features/reservations/hooks/useReservations';
@@ -31,6 +32,7 @@ export function MyReservationsPage() {
           </Link>
         }
       />
+      <ReservationTabs />
       <div className="space-y-4">
         {cancel.isError && <Alert variant="error">{getErrorMessage(cancel.error)}</Alert>}
         {reservations.isError && (

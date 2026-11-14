@@ -123,4 +123,15 @@ describe('rutas de la aplicación', () => {
 
     expect(screen.queryByRole('heading', { name: 'Reportes' })).not.toBeInTheDocument();
   });
+
+  it('deja al personal abrir todas las reservas y se lo impide a un estudiante', () => {
+    loginAs('MANAGER');
+    const { unmount } = renderRoutes(routes, '/reservations/manage');
+    expect(screen.getByRole('link', { name: 'Todas las reservas' })).toBeInTheDocument();
+    unmount();
+
+    loginAs('STUDENT');
+    renderRoutes(routes, '/reservations/manage');
+    expect(screen.queryByRole('link', { name: 'Todas las reservas' })).not.toBeInTheDocument();
+  });
 });

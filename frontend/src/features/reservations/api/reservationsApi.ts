@@ -2,6 +2,7 @@ import type {
   Availability,
   CreateReservationRequest,
   Reservation,
+  ReservationFilters,
 } from '@/features/reservations/types/reservation';
 import { apiClient } from '@/shared/api/apiClient';
 import type { Page } from '@/shared/types/api';
@@ -34,6 +35,22 @@ export async function cancelReservation(id: number): Promise<Reservation> {
 export async function getMyReservations(page: number, size: number): Promise<Page<Reservation>> {
   const { data } = await apiClient.get<Page<Reservation>>('/me/reservations', {
     params: { page, size },
+  });
+  return data;
+}
+
+/**
+ * Llama a GET /reservations (personal): todas las reservas, con filtro opcional de estado.
+ * `sort` usa el formato de Spring, por ejemplo "startAt,asc".
+ */
+export async function getReservations(
+  filters: ReservationFilters,
+  page: number,
+  size: number,
+  sort: string,
+): Promise<Page<Reservation>> {
+  const { data } = await apiClient.get<Page<Reservation>>('/reservations', {
+    params: { page, size, sort, status: filters.status },
   });
   return data;
 }

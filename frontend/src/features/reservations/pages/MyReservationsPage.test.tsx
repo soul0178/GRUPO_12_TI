@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { pageOf } from '@/features/loans/testFixtures';
 import { MyReservationsPage } from '@/features/reservations/pages/MyReservationsPage';
 import { reservationFixture } from '@/features/reservations/testFixtures';
 import { server } from '@/test/mocks/server';
@@ -76,5 +77,19 @@ describe('MyReservationsPage', () => {
 
     expect(await screen.findByText('Cancelada')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Cancelar reserva/ })).not.toBeInTheDocument();
+  });
+
+  it('muestra las pestañas al personal y las oculta a un estudiante', async () => {
+    server.use(http.get(`${API}/me/reservations`, () => HttpResponse.json(pageOf([]))));
+    loginAs('MANAGER');
+    const { unmount } = renderWithProviders(<MyReservationsPage />);
+    expect(screen.getByRole('link', { name: 'Todas las reservas' })).toBeInTheDocument();
+    await screen.findByText('Aún no tiene reservas.');
+    unmount();
+
+    loginAs('STUDENT');
+    renderWithProviders(<MyReservationsPage />);
+    await screen.findByText('Aún no tiene reservas.');
+    expect(screen.queryByRole('link', { name: 'Todas las reservas' })).not.toBeInTheDocument();
   });
 });

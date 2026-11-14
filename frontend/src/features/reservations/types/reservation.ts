@@ -48,3 +48,8 @@ export interface Availability {
   available: boolean;
   busyRanges: BusyRange[];
 }
+
+/** Filtros opcionales del listado de todas las reservas (personal). */
+export interface ReservationFilters {
+  status?: ReservationStatus;
+}

@@ -4,7 +4,8 @@ import { http, HttpResponse } from 'msw';
 import { NewLoanPage } from '@/features/loans/pages/NewLoanPage';
 import { loanFixture, pageOf } from '@/features/loans/testFixtures';
 import { server } from '@/test/mocks/server';
-import { loginAs, renderWithProviders } from '@/test/renderWithProviders';
+import { reservationFixture } from '@/features/reservations/testFixtures';
+import { loginAs, renderRoutes, renderWithProviders } from '@/test/renderWithProviders';
 
 const API = 'http://localhost:8080/api';
 
@@ -121,5 +122,83 @@ describe('NewLoanPage', () => {
     await userEvent.type(screen.getByLabelText('Buscar usuario'), 'zzz');
 
     expect(await screen.findByText('No se encontraron usuarios.')).toBeInTheDocument();
+  });
+
+  describe('desde una reserva', () => {
+    const reservation = reservationFixture({
+      userId: 20,
+      userFullName: 'Luis Quispe',
+      userEmail: 'luis@epcc.unsa.edu.pe',
+      itemId: 5,
+      itemCode: 'EQ-001',
+    });
+
+    function renderFromReservation() {
+      return renderRoutes([{ path: '/loans/new', element: <NewLoanPage /> }], {
+        pathname: '/loans/new',
+        state: { reservation },
+      });
+    }
+
+    function mockPrefill() {
+      server.use(
+        http.get(`${API}/items/5`, () => HttpResponse.json(item(true))),
+        http.get(`${API}/users/lookup`, () => HttpResponse.json([student])),
+      );
+    }
+
+    it('precarga el usuario y el ítem de la reserva', async () => {
+      mockPrefill();
+      loginAs('MANAGER');
+      renderFromReservation();
+
+      expect(await screen.findByText('EQ-001 · Laptop')).toBeInTheDocument();
+      expect(await screen.findByText('Luis Quispe')).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('Entrega de la reserva de Luis Quispe');
+      expect(await screen.findByRole('button', { name: 'Registrar entrega' })).toBeInTheDocument();
+    });
+
+    it('entrega con los datos de la reserva', async () => {
+      mockPrefill();
+      let body: unknown;
+      server.use(
+        http.post(`${API}/loans`, async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json(loanFixture(), { status: 201 });
+        }),
+      );
+      loginAs('MANAGER');
+      renderFromReservation();
+
+      await screen.findByText('Luis Quispe');
+      await userEvent.type(
+        await screen.findByLabelText(/Descripción de la garantía/),
+        'DNI 70123456',
+      );
+      await userEvent.click(await screen.findByRole('button', { name: 'Registrar entrega' }));
+
+      await waitFor(() => expect(body).toMatchObject({ userId: 20, itemId: 5 }));
+      expect(await screen.findByText('Entrega registrada')).toBeInTheDocument();
+    });
+
+    it('permite cambiar el usuario precargado', async () => {
+      mockPrefill();
+      loginAs('MANAGER');
+      renderFromReservation();
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Cambiar usuario' }));
+
+      expect(screen.getByLabelText('Buscar usuario')).toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(screen.getByText('EQ-001 · Laptop')).toBeInTheDocument();
+    });
+
+    it('sin reserva, la pantalla empieza vacía como siempre', () => {
+      loginAs('MANAGER');
+      renderWithProviders(<NewLoanPage />);
+
+      expect(screen.getByLabelText('Buscar usuario')).toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
   });
 });

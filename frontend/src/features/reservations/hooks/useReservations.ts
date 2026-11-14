@@ -1,11 +1,29 @@
 import { useQuery } from '@tanstack/react-query';
-import { getAvailability, getMyReservations } from '@/features/reservations/api/reservationsApi';
+import {
+  getAvailability,
+  getMyReservations,
+  getReservations,
+} from '@/features/reservations/api/reservationsApi';
+import type { ReservationFilters } from '@/features/reservations/types/reservation';
 
 /** Consulta una página de las reservas del usuario autenticado. */
 export function useMyReservations(page: number, size: number) {
   return useQuery({
     queryKey: ['reservations', 'mine', page, size],
     queryFn: () => getMyReservations(page, size),
+  });
+}
+
+/** Consulta una página de todas las reservas (personal); `sort` en formato Spring, p. ej. "startAt,asc". */
+export function useAllReservations(
+  filters: ReservationFilters,
+  page: number,
+  size: number,
+  sort: string,
+) {
+  return useQuery({
+    queryKey: ['reservations', 'all', filters, page, size, sort],
+    queryFn: () => getReservations(filters, page, size, sort),
   });
 }
 

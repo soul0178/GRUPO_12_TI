@@ -9,6 +9,8 @@ interface NavItem {
   to: string;
   /** Si se omite, el enlace lo ve cualquier usuario con sesión. */
   roles?: Role[];
+  /** Si es false, el enlace queda activo también en sus subrutas. Por defecto solo en la ruta exacta. */
+  end?: boolean;
 }
 
 /** Enlaces de la barra de navegación; cada módulo agrega los suyos aquí. */
@@ -19,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Mi perfil', to: '/profile' },
   { label: 'Préstamos', to: '/loans', roles: ['MANAGER', 'ADMIN'] },
   { label: 'Sanciones', to: '/sanctions', roles: ['MANAGER', 'ADMIN'] },
+  { label: 'Reportes', to: '/reports', roles: ['MANAGER', 'ADMIN'], end: false },
   { label: 'Categorías', to: '/categories', roles: ['ADMIN'] },
   { label: 'Políticas', to: '/settings', roles: ['ADMIN'] },
   { label: 'Usuarios', to: '/users', roles: ['ADMIN'] },
@@ -56,7 +59,7 @@ export function AppLayout() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                end
+                end={item.end ?? true}
                 className={({ isActive }) =>
                   `rounded-lg px-2 py-2 text-sm font-medium transition ${
                     isActive

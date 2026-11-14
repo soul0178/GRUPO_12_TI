@@ -33,4 +33,25 @@ public class TestLoanFactory {
         loan.setDeliveryCondition(PhysicalCondition.GOOD);
         return loanRepository.saveAndFlush(loan);
     }
+
+    /**
+     * Crea un préstamo del usuario y el ítem indicados con las fechas dadas. Si {@code returnedAt} es null queda
+     * abierto; si no, queda devuelto con {@code returnCondition}.
+     */
+    public Loan create(User user, Item item, Instant checkedOutAt, Instant dueAt, Instant returnedAt,
+                       PhysicalCondition returnCondition) {
+        Loan loan = new Loan();
+        loan.setUser(user);
+        loan.setItem(item);
+        loan.setDeliveredBy(users.create(Role.MANAGER));
+        loan.setCheckedOutAt(checkedOutAt);
+        loan.setDueAt(dueAt);
+        loan.setDeliveryCondition(PhysicalCondition.GOOD);
+        if (returnedAt != null) {
+            loan.setReturnedAt(returnedAt);
+            loan.setReturnCondition(returnCondition);
+            loan.setReturnedBy(users.create(Role.MANAGER));
+        }
+        return loanRepository.saveAndFlush(loan);
+    }
 }

@@ -19,6 +19,11 @@ public class MutableClock extends Clock {
         now = Instant.now();
     }
 
+    /** Como {@link #reset()}, pero si las próximas horas caen en domingo salta al lunes (no se reserva en domingo). */
+    public void resetOutsideSunday() {
+        now = WorkingDays.safeStart(Instant.now());
+    }
+
     @Override
     public ZoneId getZone() {
         return ZoneOffset.UTC;

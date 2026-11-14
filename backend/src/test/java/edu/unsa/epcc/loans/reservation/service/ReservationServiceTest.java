@@ -24,6 +24,8 @@ import edu.unsa.epcc.loans.user.entity.Role;
 import edu.unsa.epcc.loans.user.entity.User;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -61,7 +63,7 @@ class ReservationServiceTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
-        clock.reset();
+        clock.resetOutsideSunday();
         start = clock.instant().plus(Duration.ofHours(2));
     }
 
@@ -83,6 +85,36 @@ class ReservationServiceTest extends IntegrationTestBase {
         assertThat(reservation.status()).isEqualTo(ReservationStatus.PENDING);
         assertThat(reservation.itemCode()).isEqualTo(item.getCode());
         assertThat(reservation.userId()).isEqualTo(user.getId());
+    }
+
+    private static Instant lima(int year, int month, int day, int hour) {
+        return ZonedDateTime.of(year, month, day, hour, 0, 0, 0, ZoneId.of("America/Lima")).toInstant();
+    }
+
+    @Test
+    void shouldRejectReservationOnSunday() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 11, 10), lima(2035, 3, 11, 11)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("domingos");
+    }
+
+    @Test
+    void shouldRejectReservationThatCrossesIntoSunday() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 10, 23), lima(2035, 3, 11, 1)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("domingos");
+    }
+
+    @Test
+    void shouldAllowReservationOnSaturdayAndMonday() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+
+        assertThat(reserve(users.create(Role.STUDENT), item, lima(2035, 3, 10, 10), lima(2035, 3, 10, 11)).status())
+                .isEqualTo(ReservationStatus.PENDING);
+        assertThat(reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 10), lima(2035, 3, 12, 11)).status())
+                .isEqualTo(ReservationStatus.PENDING);
     }
 
     @Test

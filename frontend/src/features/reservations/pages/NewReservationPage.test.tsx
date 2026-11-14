@@ -27,7 +27,7 @@ const availability = (available: boolean) => ({
   available,
   busyRanges: available
     ? []
-    : [{ startAt: '2030-03-10T15:00:00Z', endAt: '2030-03-10T16:00:00Z', type: 'RESERVATION' }],
+    : [{ startAt: '2030-03-11T15:00:00Z', endAt: '2030-03-11T16:00:00Z', type: 'RESERVATION' }],
 });
 
 function renderPage() {
@@ -64,7 +64,7 @@ describe('NewReservationPage', () => {
     renderPage();
 
     await pickItem();
-    fillRange('2030-03-10T10:00', '2030-03-10T12:00');
+    fillRange('2030-03-11T10:00', '2030-03-11T12:00');
     expect(await screen.findByText('El ítem está libre en ese horario.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar reserva' }));
@@ -72,8 +72,8 @@ describe('NewReservationPage', () => {
     expect(await screen.findByText('Lista de reservas')).toBeInTheDocument();
     expect(body).toEqual({
       itemId: 5,
-      startAt: '2030-03-10T15:00:00.000Z',
-      endAt: '2030-03-10T17:00:00.000Z',
+      startAt: '2030-03-11T15:00:00.000Z',
+      endAt: '2030-03-11T17:00:00.000Z',
     });
   });
 
@@ -82,10 +82,23 @@ describe('NewReservationPage', () => {
     renderPage();
 
     await pickItem();
-    fillRange('2030-03-10T10:00', '2030-03-10T18:00');
+    fillRange('2030-03-11T10:00', '2030-03-11T18:00');
 
     expect(
       await screen.findByText('La reserva no puede durar más de 4 horas.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
+  });
+
+  it('no deja reservar en domingo', async () => {
+    server.use(http.get(`${API}/items`, () => HttpResponse.json(itemsPage)));
+    renderPage();
+
+    await pickItem();
+    fillRange('2030-03-10T10:00', '2030-03-10T12:00');
+
+    expect(
+      await screen.findByText('No se pueden hacer reservas los domingos.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
@@ -108,7 +121,7 @@ describe('NewReservationPage', () => {
     renderPage();
 
     await pickItem();
-    fillRange('2030-03-10T10:00', '2030-03-10T12:00');
+    fillRange('2030-03-11T10:00', '2030-03-11T12:00');
 
     expect(
       await screen.findByText('El ítem no está disponible en ese horario.'),
@@ -131,7 +144,7 @@ describe('NewReservationPage', () => {
     renderPage();
 
     await pickItem();
-    fillRange('2030-03-10T10:00', '2030-03-10T12:00');
+    fillRange('2030-03-11T10:00', '2030-03-11T12:00');
     await userEvent.click(await screen.findByRole('button', { name: 'Continuar' }));
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar reserva' }));
 

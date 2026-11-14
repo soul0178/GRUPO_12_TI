@@ -18,3 +18,22 @@ export function formatDateTime(isoInstant: string): string {
 export function limaLocalToIso(localValue: string): string {
   return new Date(`${localValue}:00-05:00`).toISOString();
 }
+
+/**
+ * Indica si el rango [inicio, fin) toca un domingo. Recibe valores datetime-local (hora de Lima, "2026-03-10T10:30").
+ * Un rango que termina justo a las 00:00 de un domingo no lo toca. Misma regla que el backend.
+ */
+export function rangeTouchesSunday(startLocal: string, endLocal: string): boolean {
+  const DAY_MS = 86_400_000;
+  const startDay = Date.parse(`${startLocal.slice(0, 10)}T00:00:00Z`);
+  let lastDay = Date.parse(`${endLocal.slice(0, 10)}T00:00:00Z`);
+  if (endLocal.slice(11, 16) === '00:00') {
+    lastDay -= DAY_MS;
+  }
+  for (let day = startDay; day <= lastDay; day += DAY_MS) {
+    if (new Date(day).getUTCDay() === 0) {
+      return true;
+    }
+  }
+  return false;
+}

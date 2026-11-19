@@ -8,7 +8,8 @@ import { Badge } from '@/shared/components/Badge';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
-const RESULTS_SIZE = 8;
+/** Se listan todos los ítems desde el inicio (con scroll); el buscador solo filtra. */
+const RESULTS_SIZE = 100;
 
 interface ReservableItemPickerProps {
   onSelect: (item: Item) => void;
@@ -38,7 +39,7 @@ export function ReservableItemPicker({ onSelect }: ReservableItemPickerProps) {
         <p className="text-sm text-slate-500">No se encontraron ítems.</p>
       )}
       {items.data && items.data.content.length > 0 && (
-        <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-inset ring-slate-200">
+        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-inset ring-slate-200">
           {items.data.content.map((item) => {
             const reservable = item.status === 'AVAILABLE' || item.status === 'ON_LOAN';
             return (

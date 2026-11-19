@@ -8,8 +8,8 @@ import { Button } from '@/shared/components/Button';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
-/** En la entrega se muestran pocos resultados; en los reportes, todos los ítems (con scroll). */
-const AVAILABLE_RESULTS_SIZE = 8;
+/** Se listan todos los ítems desde el inicio (con scroll); el buscador solo filtra. */
+const AVAILABLE_RESULTS_SIZE = 100;
 const ALL_RESULTS_SIZE = 100;
 
 interface ItemPickerProps {

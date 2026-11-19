@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { pageOf } from '@/features/loans/testFixtures';
 import { NewReservationPage } from '@/features/reservations/pages/NewReservationPage';
 import { reservationFixture } from '@/features/reservations/testFixtures';
 import { server } from '@/test/mocks/server';
@@ -114,6 +115,40 @@ describe('NewReservationPage', () => {
     expect(notice).toHaveTextContent('Pérdida (90 días, falta grave)');
     expect(notice).toHaveTextContent('pantalla rota');
     expect(notice).toHaveTextContent('baneado');
+  });
+
+  it('lista todos los ítems (equipos, libros y objetos) desde el inicio, sin escribir nada', async () => {
+    const sizes: (string | null)[] = [];
+    const category = (id: number, name: string) => ({
+      id,
+      name,
+      maxLoanHours: 24,
+      requiresGuarantee: false,
+    });
+    const base = { description: null, status: 'AVAILABLE', createdAt: '2026-03-01T00:00:00Z' };
+    const all = [
+      ...Array.from({ length: 8 }, (_, i) => ({
+        ...base,
+        id: i + 1,
+        code: `EQ-00${i + 1}`,
+        name: `Equipo ${i + 1}`,
+        category: category(1, 'Equipo'),
+      })),
+      { ...base, id: 9, code: 'LB-001', name: 'Cormen', category: category(2, 'Libro') },
+      { ...base, id: 10, code: 'OB-001', name: 'Puntero', category: category(3, 'Objeto') },
+    ];
+    server.use(
+      http.get(`${API}/items`, ({ request }) => {
+        sizes.push(new URL(request.url).searchParams.get('size'));
+        return HttpResponse.json(pageOf(all));
+      }),
+    );
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: /LB-001 · Cormen/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /OB-001 · Puntero/ })).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar ítem')).toHaveValue('');
+    expect(sizes.every((size) => Number(size) >= 20)).toBe(true);
   });
 
   it('no deja reservar fuera del horario de atención', async () => {

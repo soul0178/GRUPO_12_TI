@@ -17,6 +17,7 @@ import edu.unsa.epcc.loans.loan.entity.GuaranteeType;
 import edu.unsa.epcc.loans.loan.entity.LoanStatus;
 import edu.unsa.epcc.loans.loan.entity.PhysicalCondition;
 import edu.unsa.epcc.loans.sanction.dto.SanctionResponse;
+import edu.unsa.epcc.loans.sanction.entity.DamageLevel;
 import edu.unsa.epcc.loans.sanction.entity.SanctionStatus;
 import edu.unsa.epcc.loans.sanction.entity.SanctionType;
 import edu.unsa.epcc.loans.sanction.service.SanctionService;
@@ -184,7 +185,7 @@ class LoanServiceTest extends IntegrationTestBase {
         LoanResponse first = deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
         deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
         deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
-        loanService.returnLoan(first.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null), manager.getId());
+        loanService.returnLoan(first.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null, null), manager.getId());
 
         LoanResponse fourth = deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
 
@@ -224,7 +225,7 @@ class LoanServiceTest extends IntegrationTestBase {
         LoanResponse loan = loanService.create(request(user, equipment, DNI), manager.getId());
 
         LoanResponse returned = loanService.returnLoan(loan.id(),
-                new ReturnLoanRequest(PhysicalCondition.GOOD, "Todo en orden"), manager.getId());
+                new ReturnLoanRequest(PhysicalCondition.GOOD, null, "Todo en orden"), manager.getId());
 
         assertThat(returned.status()).isEqualTo(LoanStatus.RETURNED);
         assertThat(returned.returnedAt()).isNotNull();
@@ -236,10 +237,10 @@ class LoanServiceTest extends IntegrationTestBase {
     @Test
     void shouldRejectReturningTwice() {
         LoanResponse loan = deliver(users.create(Role.STUDENT), items.create("Libro", ItemStatus.AVAILABLE));
-        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null), manager.getId());
+        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null, null), manager.getId());
 
         assertThatThrownBy(() -> loanService.returnLoan(loan.id(),
-                new ReturnLoanRequest(PhysicalCondition.GOOD, null), manager.getId()))
+                new ReturnLoanRequest(PhysicalCondition.GOOD, null, null), manager.getId()))
                 .isInstanceOf(BusinessException.class).hasMessageContaining("ya fue devuelto");
     }
 
@@ -251,7 +252,7 @@ class LoanServiceTest extends IntegrationTestBase {
         clock.advance(Duration.ofHours(4).plusMinutes(30));
         assertThat(loanService.findById(loan.id()).status()).isEqualTo(LoanStatus.OVERDUE);
 
-        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null), manager.getId());
+        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null, null), manager.getId());
 
         SanctionResponse sanction = sanctionsOf(user).get(0);
         assertThat(sanction.type()).isEqualTo(SanctionType.OVERDUE);
@@ -265,12 +266,14 @@ class LoanServiceTest extends IntegrationTestBase {
         Item equipment = items.create("Equipo", ItemStatus.AVAILABLE);
         LoanResponse loan = loanService.create(request(user, equipment, DNI), manager.getId());
 
-        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.DAMAGED, "Pantalla rota"),
+        loanService.returnLoan(loan.id(),
+                new ReturnLoanRequest(PhysicalCondition.DAMAGED, DamageLevel.MODERATE, "Pantalla rota"),
                 manager.getId());
 
         SanctionResponse sanction = sanctionsOf(user).get(0);
         assertThat(sanction.type()).isEqualTo(SanctionType.DAMAGE);
         assertThat(sanction.status()).isEqualTo(SanctionStatus.SUGGESTED);
+        assertThat(sanction.damageLevel()).isEqualTo(DamageLevel.MODERATE);
         assertThat(statusOf(equipment)).isEqualTo(ItemStatus.OUT_OF_SERVICE);
         assertThat(sanctionService.hasActiveSanction(user.getId())).isFalse();
     }
@@ -280,9 +283,61 @@ class LoanServiceTest extends IntegrationTestBase {
         User user = users.create(Role.STUDENT);
         LoanResponse loan = deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
 
-        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.FAIR, null), manager.getId());
+        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.FAIR, null, null), manager.getId());
 
         assertThat(sanctionsOf(user)).hasSize(1);
+    }
+
+    @Test
+    void shouldRequireTheDamageLevelWhenReturnedDamaged() {
+        User user = users.create(Role.STUDENT);
+        Item equipment = items.create("Equipo", ItemStatus.AVAILABLE);
+        LoanResponse loan = loanService.create(request(user, equipment, DNI), manager.getId());
+
+        assertThatThrownBy(() -> loanService.returnLoan(loan.id(),
+                new ReturnLoanRequest(PhysicalCondition.DAMAGED, null, null), manager.getId()))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("nivel del daño");
+        assertThat(statusOf(equipment)).isEqualTo(ItemStatus.ON_LOAN);
+    }
+
+    @Test
+    void shouldSuggestMinorDamageWhenConditionDropsToFair() {
+        User user = users.create(Role.STUDENT);
+        LoanResponse loan = deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
+
+        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.FAIR, null, null), manager.getId());
+
+        assertThat(sanctionsOf(user)).singleElement()
+                .extracting(SanctionResponse::damageLevel).isEqualTo(DamageLevel.MINOR);
+    }
+
+    @Test
+    void shouldRetireTheItemAndApplyTheLossSanctionWhenReturnedAsLost() {
+        User user = users.create(Role.STUDENT);
+        Item equipment = items.create("Equipo", ItemStatus.AVAILABLE);
+        LoanResponse loan = loanService.create(request(user, equipment, DNI), manager.getId());
+        clock.advance(Duration.ofHours(5)); // además vencido: la pérdida reemplaza a la sanción por atraso
+
+        LoanResponse closed = loanService.returnLoan(loan.id(),
+                new ReturnLoanRequest(PhysicalCondition.LOST, null, "Se perdió en el laboratorio"), manager.getId());
+
+        assertThat(closed.returnCondition()).isEqualTo(PhysicalCondition.LOST);
+        assertThat(closed.guarantee().returned()).isFalse();
+        assertThat(statusOf(equipment)).isEqualTo(ItemStatus.RETIRED);
+        assertThat(sanctionsOf(user)).singleElement().satisfies(sanction -> {
+            assertThat(sanction.type()).isEqualTo(SanctionType.LOSS);
+            assertThat(sanction.status()).isEqualTo(SanctionStatus.ACTIVE);
+        });
+    }
+
+    @Test
+    void shouldNotDeliverAnItemAsLost() {
+        User user = users.create(Role.STUDENT);
+        Item book = items.create("Libro", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> loanService.create(
+                new CreateLoanRequest(user.getId(), book.getId(), PhysicalCondition.LOST, null, null),
+                manager.getId())).isInstanceOf(BusinessException.class).hasMessageContaining("perdido");
     }
 
     @Test
@@ -292,7 +347,7 @@ class LoanServiceTest extends IntegrationTestBase {
                 items.create("Libro", ItemStatus.AVAILABLE).getId(), PhysicalCondition.FAIR, null, null),
                 manager.getId());
 
-        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.FAIR, null), manager.getId());
+        loanService.returnLoan(loan.id(), new ReturnLoanRequest(PhysicalCondition.FAIR, null, null), manager.getId());
 
         assertThat(sanctionsOf(user)).isEmpty();
     }
@@ -302,7 +357,7 @@ class LoanServiceTest extends IntegrationTestBase {
         User user = users.create(Role.STUDENT);
         LoanResponse open = deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
         LoanResponse closed = deliver(user, items.create("Libro", ItemStatus.AVAILABLE));
-        loanService.returnLoan(closed.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null), manager.getId());
+        loanService.returnLoan(closed.id(), new ReturnLoanRequest(PhysicalCondition.GOOD, null, null), manager.getId());
         clock.advance(Duration.ofHours(73));
         LoanResponse late = loanService.findById(open.id());
 

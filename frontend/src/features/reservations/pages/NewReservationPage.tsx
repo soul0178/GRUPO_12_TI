@@ -5,6 +5,7 @@ import { AvailabilityPanel } from '@/features/reservations/components/Availabili
 import { ReservableItemPicker } from '@/features/reservations/components/ReservableItemPicker';
 import { useCreateReservation } from '@/features/reservations/hooks/useReservationMutations';
 import { useAvailability } from '@/features/reservations/hooks/useReservations';
+import { DamagePolicyNotice } from '@/features/sanctions/components/DamagePolicyNotice';
 import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
 import { Button } from '@/shared/components/Button';
@@ -84,6 +85,9 @@ export function NewReservationPage() {
         title="Nueva reserva"
         description="Paso 1: ítem · Paso 2: horario · Paso 3: confirmar."
       />
+      <div className="mb-4 max-w-3xl">
+        <DamagePolicyNotice />
+      </div>
       <Card className="max-w-3xl space-y-6 p-6">
         {!item && <ReservableItemPicker onSelect={setItem} />}
 

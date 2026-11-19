@@ -46,7 +46,24 @@ public class Sanction extends BaseEntity {
     @Column(nullable = false)
     private String reason;
 
-    /** Id del préstamo que originó la sanción (el vínculo con la tabla de préstamos lo agrega M4). */
-    @Column(name = "loan_id", nullable = false)
+    /** Préstamo que originó la sanción (atraso, daño o pérdida); vacío si nació de una reserva. */
+    @Column(name = "loan_id")
     private Long loanId;
+
+    /** Reserva no recogida que originó la sanción (NO_SHOW); vacío si nació de un préstamo. */
+    @Column(name = "reservation_id")
+    private Long reservationId;
+
+    /** Gravedad del daño; solo en sanciones DAMAGE. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "damage_level")
+    private DamageLevel damageLevel;
+
+    /** Verdadero si esta sanción llevó al baneo del usuario (tercera falta grave); al levantarla se reactiva. */
+    @Column(name = "caused_ban", nullable = false)
+    private boolean causedBan;
+
+    /** Motivo que escribió el ADMIN al levantar o reducir la sanción. */
+    @Column(name = "admin_note")
+    private String adminNote;
 }

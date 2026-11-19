@@ -1,4 +1,6 @@
-export type PhysicalCondition = 'GOOD' | 'FAIR' | 'DAMAGED';
+import type { DamageLevel } from '@/features/sanctions/types/sanction';
+
+export type PhysicalCondition = 'GOOD' | 'FAIR' | 'DAMAGED' | 'LOST';
 export type LoanStatus = 'ACTIVE' | 'OVERDUE' | 'RETURNED';
 export type GuaranteeType = 'DNI' | 'UNIVERSITY_ID' | 'OTHER';
 
@@ -7,9 +9,14 @@ export const CONDITION_LABELS: Record<PhysicalCondition, string> = {
   GOOD: 'Bueno',
   FAIR: 'Regular',
   DAMAGED: 'Dañado',
+  LOST: 'Perdido',
 };
 
-export const CONDITIONS = Object.keys(CONDITION_LABELS) as PhysicalCondition[];
+/** Estados válidos al entregar un ítem (un ítem perdido no se entrega). */
+export const CONDITIONS: PhysicalCondition[] = ['GOOD', 'FAIR', 'DAMAGED'];
+
+/** Estados válidos al devolver: los de la entrega más Perdido. */
+export const RETURN_CONDITIONS: PhysicalCondition[] = [...CONDITIONS, 'LOST'];
 
 export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
   ACTIVE: 'Activo',
@@ -32,7 +39,7 @@ export function isWorseCondition(
   delivery: PhysicalCondition,
   returned: PhysicalCondition,
 ): boolean {
-  return CONDITIONS.indexOf(returned) > CONDITIONS.indexOf(delivery);
+  return RETURN_CONDITIONS.indexOf(returned) > RETURN_CONDITIONS.indexOf(delivery);
 }
 
 export interface Guarantee {
@@ -57,6 +64,7 @@ export interface Loan {
   returnedAt: string | null;
   deliveryCondition: PhysicalCondition;
   returnCondition: PhysicalCondition | null;
+  returnDamageLevel?: DamageLevel | null;
   deliveryObservations: string | null;
   returnObservations: string | null;
   status: LoanStatus;
@@ -73,6 +81,8 @@ export interface CreateLoanRequest {
 
 export interface ReturnLoanRequest {
   returnCondition: PhysicalCondition;
+  /** Obligatorio si vuelve dañado. */
+  damageLevel?: DamageLevel;
   returnObservations?: string;
 }
 

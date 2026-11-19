@@ -3,6 +3,8 @@ package edu.unsa.epcc.loans.sanction.controller;
 import edu.unsa.epcc.loans.common.dto.PageResponse;
 import edu.unsa.epcc.loans.common.security.AuthenticatedUser;
 import edu.unsa.epcc.loans.sanction.dto.ConfirmSanctionRequest;
+import edu.unsa.epcc.loans.sanction.dto.LiftSanctionRequest;
+import edu.unsa.epcc.loans.sanction.dto.ReduceSanctionRequest;
 import edu.unsa.epcc.loans.sanction.dto.SanctionResponse;
 import edu.unsa.epcc.loans.sanction.entity.SanctionStatus;
 import edu.unsa.epcc.loans.sanction.service.SanctionService;
@@ -48,11 +50,25 @@ public class SanctionController {
         return sanctionService.findByUser(current.id(), status, pageable);
     }
 
-    /** Confirma una sanción sugerida con los días de suspensión indicados. */
+    /** Confirma una sanción de daño sugerida (días y nivel opcionales; sin días se aplica la política). */
     @PostMapping("/sanctions/{id}/confirm")
     @PreAuthorize("hasRole('ADMIN')")
     public SanctionResponse confirm(@PathVariable Long id, @Valid @RequestBody ConfirmSanctionRequest request) {
-        return sanctionService.confirm(id, request.days());
+        return sanctionService.confirm(id, request.days(), request.damageLevel());
+    }
+
+    /** Levanta una sanción activa (ADMIN); si causó un baneo, reactiva al usuario. */
+    @PostMapping("/sanctions/{id}/lift")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SanctionResponse lift(@PathVariable Long id, @Valid @RequestBody LiftSanctionRequest request) {
+        return sanctionService.lift(id, request.reason());
+    }
+
+    /** Reduce la duración total de una sanción activa (ADMIN). */
+    @PostMapping("/sanctions/{id}/reduce")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SanctionResponse reduce(@PathVariable Long id, @Valid @RequestBody ReduceSanctionRequest request) {
+        return sanctionService.reduce(id, request.days(), request.reason());
     }
 
     /** Rechaza una sanción sugerida. */

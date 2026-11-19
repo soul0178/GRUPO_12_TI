@@ -1,16 +1,23 @@
+import { ActiveActions } from '@/features/sanctions/components/ActiveActions';
 import { SuggestedActions } from '@/features/sanctions/components/SuggestedActions';
-import { SANCTION_STATUS_LABELS, SANCTION_TYPE_LABELS } from '@/features/sanctions/types/sanction';
-import type { Sanction, SanctionStatus } from '@/features/sanctions/types/sanction';
+import {
+  DAMAGE_LEVEL_LABELS,
+  SANCTION_STATUS_LABELS,
+  SANCTION_TYPE_LABELS,
+} from '@/features/sanctions/types/sanction';
+import type { DamageLevel, Sanction, SanctionStatus } from '@/features/sanctions/types/sanction';
 import { Badge } from '@/shared/components/Badge';
 import { formatDateTime } from '@/shared/utils/dateFormat';
 
 interface SanctionTableProps {
   sanctions: Sanction[];
-  /** Si es true (ADMIN) las sanciones sugeridas muestran los controles para confirmar o rechazar. */
+  /** Si es true (ADMIN) las sugeridas se confirman o rechazan y las activas se reducen o levantan. */
   canResolve: boolean;
   isUpdating: boolean;
-  onConfirm: (id: number, days: number) => void;
+  onConfirm: (id: number, days: number | undefined, level: DamageLevel) => void;
   onReject: (id: number) => void;
+  onLift: (id: number, reason: string) => void;
+  onReduce: (id: number, days: number, reason: string) => void;
 }
 
 const HEADER_CLASSES =
@@ -21,15 +28,18 @@ const STATUS_TONES: Record<SanctionStatus, 'amber' | 'red' | 'slate' | 'indigo'>
   ACTIVE: 'red',
   FINISHED: 'slate',
   REJECTED: 'slate',
+  LIFTED: 'indigo',
 };
 
-/** Tabla de sanciones; el ADMIN resuelve las sugeridas desde la misma fila. */
+/** Tabla de sanciones; el ADMIN resuelve las sugeridas y reduce o levanta las activas desde la misma fila. */
 export function SanctionTable({
   sanctions,
   canResolve,
   isUpdating,
   onConfirm,
   onReject,
+  onLift,
+  onReduce,
 }: SanctionTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -51,8 +61,21 @@ export function SanctionTable({
                 <p className="font-medium text-slate-900">{sanction.userFullName}</p>
                 <p className="text-xs text-slate-500">{sanction.userEmail}</p>
               </td>
-              <td className="px-4 py-3 text-slate-600">{SANCTION_TYPE_LABELS[sanction.type]}</td>
-              <td className="px-4 py-3 text-slate-600">{sanction.reason}</td>
+              <td className="px-4 py-3 text-slate-600">
+                {SANCTION_TYPE_LABELS[sanction.type]}
+                {sanction.damageLevel && ` · ${DAMAGE_LEVEL_LABELS[sanction.damageLevel]}`}
+                {sanction.causedBan && (
+                  <span className="ml-2">
+                    <Badge tone="red">Baneo</Badge>
+                  </span>
+                )}
+              </td>
+              <td className="px-4 py-3 text-slate-600">
+                {sanction.reason}
+                {sanction.adminNote && (
+                  <p className="mt-1 text-xs text-slate-500">{`Nota del administrador: ${sanction.adminNote}`}</p>
+                )}
+              </td>
               <td className="px-4 py-3 text-xs text-slate-600">
                 {sanction.startAt && sanction.endAt
                   ? `${formatDateTime(sanction.startAt)} – ${formatDateTime(sanction.endAt)}`
@@ -68,9 +91,19 @@ export function SanctionTable({
                   {sanction.status === 'SUGGESTED' && (
                     <SuggestedActions
                       userName={sanction.userFullName}
+                      initialLevel={sanction.damageLevel ?? 'MODERATE'}
                       disabled={isUpdating}
-                      onConfirm={(days) => onConfirm(sanction.id, days)}
+                      onConfirm={(days, level) => onConfirm(sanction.id, days, level)}
                       onReject={() => onReject(sanction.id)}
+                    />
+                  )}
+                  {sanction.status === 'ACTIVE' && (
+                    <ActiveActions
+                      userName={sanction.userFullName}
+                      canReduce={!sanction.causedBan}
+                      disabled={isUpdating}
+                      onLift={(reason) => onLift(sanction.id, reason)}
+                      onReduce={(days, reason) => onReduce(sanction.id, days, reason)}
                     />
                   )}
                 </td>

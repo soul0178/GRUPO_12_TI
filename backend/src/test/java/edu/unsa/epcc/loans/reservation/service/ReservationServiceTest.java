@@ -14,6 +14,9 @@ import edu.unsa.epcc.loans.reservation.dto.BusyRangeResponse.BusyType;
 import edu.unsa.epcc.loans.reservation.dto.CreateReservationRequest;
 import edu.unsa.epcc.loans.reservation.dto.ReservationResponse;
 import edu.unsa.epcc.loans.reservation.entity.ReservationStatus;
+import edu.unsa.epcc.loans.sanction.entity.SanctionStatus;
+import edu.unsa.epcc.loans.sanction.entity.SanctionType;
+import edu.unsa.epcc.loans.sanction.service.SanctionRules;
 import edu.unsa.epcc.loans.sanction.service.SanctionService;
 import edu.unsa.epcc.loans.support.IntegrationTestBase;
 import edu.unsa.epcc.loans.support.MutableClock;
@@ -292,6 +295,37 @@ class ReservationServiceTest extends IntegrationTestBase {
         clock.advance(Duration.ofMinutes(2));
 
         assertThat(statusOf(user, reservation)).isEqualTo(ReservationStatus.EXPIRED);
+    }
+
+    @Test
+    void shouldApplyTheMinimumSanctionToTheOwnerWhenTheReservationExpiresUnclaimed() {
+        User user = users.create(Role.STUDENT);
+        ReservationResponse reservation = reserve(user, items.create("Equipo", ItemStatus.AVAILABLE));
+
+        clock.advance(Duration.ofHours(2).plusMinutes(31));
+        assertThat(statusOf(user, reservation)).isEqualTo(ReservationStatus.EXPIRED);
+
+        var sanctions = sanctionService.findByUser(user.getId(), null, org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(sanctions.content()).singleElement().satisfies(sanction -> {
+            assertThat(sanction.type()).isEqualTo(SanctionType.NO_SHOW);
+            assertThat(sanction.status()).isEqualTo(SanctionStatus.ACTIVE);
+            assertThat(sanction.reservationId()).isEqualTo(reservation.id());
+            assertThat(java.time.temporal.ChronoUnit.DAYS.between(sanction.startAt(), sanction.endAt()))
+                    .isEqualTo(SanctionRules.NO_SHOW_DAYS);
+        });
+        assertThat(sanctionService.hasActiveSanction(user.getId())).isTrue();
+    }
+
+    @Test
+    void shouldNotSanctionACancelledOrFulfilledReservation() {
+        User user = users.create(Role.STUDENT);
+        ReservationResponse reservation = reserve(user, items.create("Libro", ItemStatus.AVAILABLE));
+        reservationService.cancel(reservation.id(), user.getId());
+
+        clock.advance(Duration.ofHours(3));
+        reservationService.search(user.getId(), null, null, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        assertThat(sanctionService.hasActiveSanction(user.getId())).isFalse();
     }
 
     @Test

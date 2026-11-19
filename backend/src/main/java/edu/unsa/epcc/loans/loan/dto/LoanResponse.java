@@ -2,6 +2,7 @@ package edu.unsa.epcc.loans.loan.dto;
 
 import edu.unsa.epcc.loans.loan.entity.LoanStatus;
 import edu.unsa.epcc.loans.loan.entity.PhysicalCondition;
+import edu.unsa.epcc.loans.sanction.entity.DamageLevel;
 import java.time.Instant;
 
 public record LoanResponse(
@@ -20,6 +21,7 @@ public record LoanResponse(
         Instant returnedAt,
         PhysicalCondition deliveryCondition,
         PhysicalCondition returnCondition,
+        DamageLevel returnDamageLevel,
         String deliveryObservations,
         String returnObservations,
         LoanStatus status,

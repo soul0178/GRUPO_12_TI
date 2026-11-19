@@ -2,6 +2,7 @@ package edu.unsa.epcc.loans.loan.entity;
 
 import edu.unsa.epcc.loans.common.entity.BaseEntity;
 import edu.unsa.epcc.loans.inventory.entity.Item;
+import edu.unsa.epcc.loans.sanction.entity.DamageLevel;
 import edu.unsa.epcc.loans.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -64,6 +65,11 @@ public class Loan extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "return_condition")
     private PhysicalCondition returnCondition;
+
+    /** Nivel del daño registrado al devolver; solo si volvió dañado. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "return_damage_level")
+    private DamageLevel returnDamageLevel;
 
     @Column(name = "delivery_observations")
     private String deliveryObservations;

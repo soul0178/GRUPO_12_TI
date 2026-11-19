@@ -1,5 +1,6 @@
 package edu.unsa.epcc.loans.sanction.dto;
 
+import edu.unsa.epcc.loans.sanction.entity.DamageLevel;
 import edu.unsa.epcc.loans.sanction.entity.SanctionStatus;
 import edu.unsa.epcc.loans.sanction.entity.SanctionType;
 import java.time.Instant;
@@ -15,5 +16,9 @@ public record SanctionResponse(
         Instant endAt,
         String reason,
         Long loanId,
+        Long reservationId,
+        DamageLevel damageLevel,
+        boolean causedBan,
+        String adminNote,
         Instant createdAt) {
 }

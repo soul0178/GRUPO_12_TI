@@ -1,4 +1,9 @@
-import { formatDateTime, limaLocalToIso, rangeTouchesSunday } from '@/shared/utils/dateFormat';
+import {
+  formatDateTime,
+  limaLocalToIso,
+  rangeTouchesSunday,
+  rangeWithinBusinessHours,
+} from '@/shared/utils/dateFormat';
 
 describe('formatDateTime', () => {
   it('muestra la hora de Lima (UTC-5) para un Instant en UTC', () => {
@@ -33,5 +38,21 @@ describe('rangeTouchesSunday', () => {
   it('un rango que termina a las 00:00 del domingo no lo toca', () => {
     expect(rangeTouchesSunday('2030-03-09T22:00', '2030-03-10T00:00')).toBe(false);
     expect(rangeTouchesSunday('2030-03-10T00:00', '2030-03-10T01:00')).toBe(true);
+  });
+});
+
+describe('rangeWithinBusinessHours', () => {
+  it('acepta rangos del mismo día entre las 07:00 y las 20:10', () => {
+    expect(rangeWithinBusinessHours('2030-03-12T07:00', '2030-03-12T20:10')).toBe(true);
+    expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-12T12:00')).toBe(true);
+  });
+
+  it('rechaza rangos que empiezan antes de abrir o terminan después de cerrar', () => {
+    expect(rangeWithinBusinessHours('2030-03-12T06:59', '2030-03-12T09:00')).toBe(false);
+    expect(rangeWithinBusinessHours('2030-03-12T19:00', '2030-03-12T20:11')).toBe(false);
+  });
+
+  it('rechaza rangos que cruzan de un día a otro', () => {
+    expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-13T10:00')).toBe(false);
   });
 });

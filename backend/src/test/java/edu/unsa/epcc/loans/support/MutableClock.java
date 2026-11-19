@@ -9,19 +9,20 @@ import java.time.ZoneOffset;
 /** Reloj de pruebas que se puede adelantar, para probar atrasos, sanciones que terminan y reservas que expiran. */
 public class MutableClock extends Clock {
 
-    private Instant now = Instant.now();
+    private Instant now = WorkingDays.nextMorning(Instant.now());
 
     public void advance(Duration duration) {
         now = now.plus(duration);
     }
 
+    /** Vuelve a las próximas 08:00 de Lima de un día no domingo: dentro del horario de atención y sin domingos. */
     public void reset() {
-        now = Instant.now();
+        now = WorkingDays.nextMorning(Instant.now());
     }
 
-    /** Como {@link #reset()}, pero si las próximas horas caen en domingo salta al lunes (no se reserva en domingo). */
+    /** Igual que {@link #reset()}; se mantiene el nombre para las pruebas de reservas. */
     public void resetOutsideSunday() {
-        now = WorkingDays.safeStart(Instant.now());
+        reset();
     }
 
     @Override

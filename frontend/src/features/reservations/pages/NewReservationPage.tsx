@@ -5,13 +5,20 @@ import { AvailabilityPanel } from '@/features/reservations/components/Availabili
 import { ReservableItemPicker } from '@/features/reservations/components/ReservableItemPicker';
 import { useCreateReservation } from '@/features/reservations/hooks/useReservationMutations';
 import { useAvailability } from '@/features/reservations/hooks/useReservations';
+import { DamagePolicyNotice } from '@/features/sanctions/components/DamagePolicyNotice';
 import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
 import { PageHeader } from '@/shared/components/PageHeader';
-import { formatDateTime, limaLocalToIso, rangeTouchesSunday } from '@/shared/utils/dateFormat';
+import {
+  BUSINESS_HOURS_LABEL,
+  formatDateTime,
+  limaLocalToIso,
+  rangeTouchesSunday,
+  rangeWithinBusinessHours,
+} from '@/shared/utils/dateFormat';
 
 const MILLIS_PER_HOUR = 3_600_000;
 
@@ -30,6 +37,9 @@ function validateRange(start: string, end: string, item: Item): string | null {
   }
   if (rangeTouchesSunday(start, end)) {
     return 'No se pueden hacer reservas los domingos.';
+  }
+  if (!rangeWithinBusinessHours(start, end)) {
+    return `La reserva debe estar dentro del horario de atención (${BUSINESS_HOURS_LABEL}) y terminar el mismo día.`;
   }
   if (endMs - startMs > item.category.maxLoanHours * MILLIS_PER_HOUR) {
     return `La reserva no puede durar más de ${item.category.maxLoanHours} horas.`;
@@ -75,6 +85,9 @@ export function NewReservationPage() {
         title="Nueva reserva"
         description="Paso 1: ítem · Paso 2: horario · Paso 3: confirmar."
       />
+      <div className="mb-4 max-w-3xl">
+        <DamagePolicyNotice />
+      </div>
       <Card className="max-w-3xl space-y-6 p-6">
         {!item && <ReservableItemPicker onSelect={setItem} />}
 

@@ -37,3 +37,25 @@ export function rangeTouchesSunday(startLocal: string, endLocal: string): boolea
   }
   return false;
 }
+
+/** Horario de atención (hora de Lima): se entrega desde las 07:00 y todo se devuelve antes de las 20:10. */
+export const OPENING_TIME = '07:00';
+export const CLOSING_TIME = '20:10';
+export const BUSINESS_HOURS_LABEL = `${OPENING_TIME} a ${CLOSING_TIME}`;
+
+/**
+ * Indica si el rango cabe en el horario de atención y empieza y termina el mismo día. Recibe valores datetime-local
+ * (hora de Lima, "2026-03-10T10:30"). Misma regla que el backend.
+ */
+export function rangeWithinBusinessHours(startLocal: string, endLocal: string): boolean {
+  const sameDay = startLocal.slice(0, 10) === endLocal.slice(0, 10);
+  const startTime = startLocal.slice(11, 16);
+  const endTime = endLocal.slice(11, 16);
+  return (
+    sameDay &&
+    startTime >= OPENING_TIME &&
+    startTime <= CLOSING_TIME &&
+    endTime >= OPENING_TIME &&
+    endTime <= CLOSING_TIME
+  );
+}

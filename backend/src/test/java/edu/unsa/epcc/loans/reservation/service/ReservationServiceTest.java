@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import edu.unsa.epcc.loans.common.exception.BusinessException;
+import edu.unsa.epcc.loans.common.util.BusinessHours;
 import edu.unsa.epcc.loans.common.exception.NotFoundException;
 import edu.unsa.epcc.loans.inventory.entity.Item;
 import edu.unsa.epcc.loans.inventory.entity.ItemStatus;
@@ -13,6 +14,9 @@ import edu.unsa.epcc.loans.reservation.dto.BusyRangeResponse.BusyType;
 import edu.unsa.epcc.loans.reservation.dto.CreateReservationRequest;
 import edu.unsa.epcc.loans.reservation.dto.ReservationResponse;
 import edu.unsa.epcc.loans.reservation.entity.ReservationStatus;
+import edu.unsa.epcc.loans.sanction.entity.SanctionStatus;
+import edu.unsa.epcc.loans.sanction.entity.SanctionType;
+import edu.unsa.epcc.loans.sanction.service.SanctionRules;
 import edu.unsa.epcc.loans.sanction.service.SanctionService;
 import edu.unsa.epcc.loans.support.IntegrationTestBase;
 import edu.unsa.epcc.loans.support.MutableClock;
@@ -105,6 +109,43 @@ class ReservationServiceTest extends IntegrationTestBase {
 
         assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 10, 23), lima(2035, 3, 11, 1)))
                 .isInstanceOf(BusinessException.class).hasMessageContaining("domingos");
+    }
+
+    @Test
+    void shouldRejectReservationStartingBeforeOpening() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 6), lima(2035, 3, 12, 8)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("horario de atención");
+    }
+
+    @Test
+    void shouldRejectReservationEndingAfterClosing() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+
+        // Cierre 20:10: terminar a las 21:00 no se permite
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 19), lima(2035, 3, 12, 21)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("horario de atención");
+    }
+
+    @Test
+    void shouldRejectReservationSpanningTwoDays() {
+        Item item = items.create("Libro", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 10), lima(2035, 3, 13, 10)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("horario de atención");
+    }
+
+    @Test
+    void shouldAllowReservationBetweenOpeningAndClosing() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+        Instant opening = lima(2035, 3, 12, 7);
+        Instant closing = BusinessHours.closingOf(opening);
+
+        assertThat(reserve(users.create(Role.STUDENT), item, opening, opening.plus(Duration.ofHours(1))).status())
+                .isEqualTo(ReservationStatus.PENDING);
+        assertThat(reserve(users.create(Role.STUDENT), item, closing.minus(Duration.ofHours(1)), closing).status())
+                .isEqualTo(ReservationStatus.PENDING);
     }
 
     @Test
@@ -254,6 +295,37 @@ class ReservationServiceTest extends IntegrationTestBase {
         clock.advance(Duration.ofMinutes(2));
 
         assertThat(statusOf(user, reservation)).isEqualTo(ReservationStatus.EXPIRED);
+    }
+
+    @Test
+    void shouldApplyTheMinimumSanctionToTheOwnerWhenTheReservationExpiresUnclaimed() {
+        User user = users.create(Role.STUDENT);
+        ReservationResponse reservation = reserve(user, items.create("Equipo", ItemStatus.AVAILABLE));
+
+        clock.advance(Duration.ofHours(2).plusMinutes(31));
+        assertThat(statusOf(user, reservation)).isEqualTo(ReservationStatus.EXPIRED);
+
+        var sanctions = sanctionService.findByUser(user.getId(), null, org.springframework.data.domain.PageRequest.of(0, 10));
+        assertThat(sanctions.content()).singleElement().satisfies(sanction -> {
+            assertThat(sanction.type()).isEqualTo(SanctionType.NO_SHOW);
+            assertThat(sanction.status()).isEqualTo(SanctionStatus.ACTIVE);
+            assertThat(sanction.reservationId()).isEqualTo(reservation.id());
+            assertThat(java.time.temporal.ChronoUnit.DAYS.between(sanction.startAt(), sanction.endAt()))
+                    .isEqualTo(SanctionRules.NO_SHOW_DAYS);
+        });
+        assertThat(sanctionService.hasActiveSanction(user.getId())).isTrue();
+    }
+
+    @Test
+    void shouldNotSanctionACancelledOrFulfilledReservation() {
+        User user = users.create(Role.STUDENT);
+        ReservationResponse reservation = reserve(user, items.create("Libro", ItemStatus.AVAILABLE));
+        reservationService.cancel(reservation.id(), user.getId());
+
+        clock.advance(Duration.ofHours(3));
+        reservationService.search(user.getId(), null, null, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        assertThat(sanctionService.hasActiveSanction(user.getId())).isFalse();
     }
 
     @Test

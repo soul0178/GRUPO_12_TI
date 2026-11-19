@@ -9,7 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -40,14 +39,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findOverlapping(@Param("itemId") Long itemId, @Param("from") Instant from,
                                       @Param("to") Instant to, @Param("pending") ReservationStatus pending);
 
-    /** Pasa a EXPIRED las reservas PENDING cuyo inicio es anterior a {@code limit}. Devuelve cuántas cambió. */
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("""
-            update Reservation r set r.status = :expired, r.updatedAt = :now
-            where r.status = :pending and r.startAt < :limit
-            """)
-    int expirePending(@Param("limit") Instant limit, @Param("now") Instant now,
-                      @Param("pending") ReservationStatus pending, @Param("expired") ReservationStatus expired);
+    /** Reservas PENDING cuyo inicio es anterior a {@code limit}: ya pasó su plazo de recojo. */
+    @Query("select r from Reservation r where r.status = :pending and r.startAt < :limit")
+    List<Reservation> findPendingStartedBefore(@Param("limit") Instant limit,
+                                               @Param("pending") ReservationStatus pending);
 
     /** Préstamos sin devolver de un usuario; cuentan para el límite junto con las reservas pendientes. */
     @Query("select count(l) from Loan l where l.user.id = :userId and l.returnedAt is null")

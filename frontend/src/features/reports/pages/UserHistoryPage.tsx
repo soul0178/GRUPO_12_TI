@@ -27,6 +27,7 @@ export function UserHistoryPage() {
       {userId === undefined ? (
         <Card className="p-4">
           <UserPicker
+            listAll
             selected={null}
             onSelect={(user) => user && navigate(`/reports/users/${user.id}`)}
           />

@@ -76,3 +76,14 @@ cd frontend && VITE_API_URL=https://tu-dominio/api npm run build   # sirve dist/
 - **Puerto 5440 u 8080 ocupado**: `sudo ss -ltnp | grep -E '5440|8080'`.
 - **Frontend sin datos / error CORS**: el backend debe estar en `dev` (permite `http://localhost:5173`).
 - **`./mvnw: Permission denied`**: `chmod +x backend/mvnw`.
+
+## Datos de demostración (alumnos, docentes, inventario y préstamos)
+
+Con la base en marcha y el backend arrancado al menos una vez (para que Flyway cree las tablas), carga los datos de la clase:
+
+```bash
+docker exec -i loans-db psql -U loans -d loans -v ON_ERROR_STOP=1 < backend/db/seed/demo-data.sql
+```
+
+Crea 48 alumnos, 5 docentes, 2 administrativos, 20 ítems (8 equipos, 6 libros, 6 objetos) y 5 préstamos vigentes el 2 de diciembre de 2026.
+Todos los usuarios nuevos tienen la contraseña inicial `Unsa2026`. El script es idempotente: se puede repetir sin duplicar datos.

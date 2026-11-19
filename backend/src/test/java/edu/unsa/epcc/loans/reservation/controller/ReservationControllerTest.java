@@ -39,7 +39,7 @@ class ReservationControllerTest extends IntegrationTestBase {
     }
 
     private Instant soon() {
-        return WorkingDays.safeStart(Instant.now().plus(Duration.ofHours(3)));
+        return WorkingDays.nextMorning(Instant.now());
     }
 
     @ParameterizedTest

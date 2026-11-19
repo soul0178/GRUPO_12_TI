@@ -1,8 +1,11 @@
 package edu.unsa.epcc.loans.sanction.repository;
 
+import edu.unsa.epcc.loans.sanction.entity.DamageLevel;
 import edu.unsa.epcc.loans.sanction.entity.Sanction;
 import edu.unsa.epcc.loans.sanction.entity.SanctionStatus;
+import edu.unsa.epcc.loans.sanction.entity.SanctionType;
 import java.time.Instant;
+import java.util.Collection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -23,6 +26,24 @@ public interface SanctionRepository extends JpaRepository<Sanction, Long> {
               and (:status is null or s.status = :status)
             """)
     Page<Sanction> search(@Param("userId") Long userId, @Param("status") SanctionStatus status, Pageable pageable);
+
+    /** Sanciones del usuario con alguno de los estados indicados iniciadas desde {@code since} (reincidencia). */
+    @Query("""
+            select count(s) from Sanction s
+            where s.user.id = :userId and s.status in :statuses and s.startAt >= :since
+            """)
+    long countStartedSince(@Param("userId") Long userId, @Param("statuses") Collection<SanctionStatus> statuses,
+                           @Param("since") Instant since);
+
+    /** Faltas graves del usuario (pérdida o daño extremo) con alguno de los estados indicados. */
+    @Query("""
+            select count(s) from Sanction s
+            where s.user.id = :userId and s.status in :statuses
+              and (s.type = :loss or (s.type = :damage and s.damageLevel = :severe))
+            """)
+    long countGraveFaults(@Param("userId") Long userId, @Param("statuses") Collection<SanctionStatus> statuses,
+                          @Param("loss") SanctionType loss, @Param("damage") SanctionType damage,
+                          @Param("severe") DamageLevel severe);
 
     /** Pasa a FINISHED las sanciones ACTIVE cuya fecha de fin ya se cumplió. Devuelve cuántas cambió. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

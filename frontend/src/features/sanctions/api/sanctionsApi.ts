@@ -1,4 +1,9 @@
-import type { PolicySettings, Sanction, SanctionStatus } from '@/features/sanctions/types/sanction';
+import type {
+  DamageLevel,
+  PolicySettings,
+  Sanction,
+  SanctionStatus,
+} from '@/features/sanctions/types/sanction';
 import { apiClient } from '@/shared/api/apiClient';
 import type { Page } from '@/shared/types/api';
 
@@ -21,8 +26,23 @@ export async function getMySanctions(status?: SanctionStatus): Promise<Page<Sanc
 }
 
 /** Llama a POST /sanctions/{id}/confirm (solo ADMIN). */
-export async function confirmSanction(id: number, days: number): Promise<Sanction> {
-  const { data } = await apiClient.post<Sanction>(`/sanctions/${id}/confirm`, { days });
+export async function confirmSanction(
+  id: number,
+  request: { days?: number; damageLevel?: DamageLevel },
+): Promise<Sanction> {
+  const { data } = await apiClient.post<Sanction>(`/sanctions/${id}/confirm`, request);
+  return data;
+}
+
+/** Llama a POST /sanctions/{id}/lift: levanta una sanción activa (solo ADMIN). */
+export async function liftSanction(id: number, reason: string): Promise<Sanction> {
+  const { data } = await apiClient.post<Sanction>(`/sanctions/${id}/lift`, { reason });
+  return data;
+}
+
+/** Llama a POST /sanctions/{id}/reduce: reduce la duración total de una sanción activa (solo ADMIN). */
+export async function reduceSanction(id: number, days: number, reason: string): Promise<Sanction> {
+  const { data } = await apiClient.post<Sanction>(`/sanctions/${id}/reduce`, { days, reason });
   return data;
 }
 

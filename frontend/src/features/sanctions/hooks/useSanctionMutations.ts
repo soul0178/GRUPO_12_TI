@@ -1,11 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { confirmSanction, rejectSanction } from '@/features/sanctions/api/sanctionsApi';
+import {
+  confirmSanction,
+  liftSanction,
+  reduceSanction,
+  rejectSanction,
+} from '@/features/sanctions/api/sanctionsApi';
+import type { DamageLevel } from '@/features/sanctions/types/sanction';
 
-/** Confirma una sanción sugerida con los días indicados y refresca las listas de sanciones. */
+/** Confirma una sanción sugerida (días y nivel opcionales) y refresca las listas de sanciones. */
 export function useConfirmSanction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, days }: { id: number; days: number }) => confirmSanction(id, days),
+    mutationFn: ({ id, days, damageLevel }: { id: number; days?: number; damageLevel?: DamageLevel }) =>
+      confirmSanction(id, { days, damageLevel }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sanctions'] }),
   });
 }
@@ -15,6 +22,25 @@ export function useRejectSanction() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: rejectSanction,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sanctions'] }),
+  });
+}
+
+/** Levanta una sanción activa con un motivo y refresca las listas de sanciones. */
+export function useLiftSanction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) => liftSanction(id, reason),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sanctions'] }),
+  });
+}
+
+/** Reduce una sanción activa a una duración total menor y refresca las listas de sanciones. */
+export function useReduceSanction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, days, reason }: { id: number; days: number; reason: string }) =>
+      reduceSanction(id, days, reason),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sanctions'] }),
   });
 }

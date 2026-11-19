@@ -15,11 +15,14 @@ export function useUser(id: number | undefined) {
   });
 }
 
-/** Busca usuarios por texto para el personal; no consulta mientras el texto esté vacío. */
-export function useUserLookup(text: string) {
+/**
+ * Busca usuarios por texto para el personal. Con el texto vacío no consulta, salvo que se pida el listado
+ * completo (`listAll`, usado en los reportes): entonces el backend devuelve todos los usuarios.
+ */
+export function useUserLookup(text: string, listAll = false) {
   return useQuery({
-    queryKey: ['users', 'lookup', text],
+    queryKey: ['users', 'lookup', text, listAll],
     queryFn: () => lookupUsers(text),
-    enabled: text.trim().length > 0,
+    enabled: listAll || text.trim().length > 0,
   });
 }

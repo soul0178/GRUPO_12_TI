@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import edu.unsa.epcc.loans.sanction.dto.SanctionResponse;
+import edu.unsa.epcc.loans.sanction.entity.DamageLevel;
 import edu.unsa.epcc.loans.sanction.service.SanctionService;
 import edu.unsa.epcc.loans.support.IntegrationTestBase;
 import edu.unsa.epcc.loans.support.TestLoanFactory;
@@ -38,7 +39,7 @@ class SanctionControllerTest extends IntegrationTestBase {
     }
 
     private SanctionResponse suggestedFor(User user) {
-        return sanctionService.suggestDamageSanction(user.getId(), loanId(), "Equipo dañado");
+        return sanctionService.suggestDamageSanction(user.getId(), loanId(), DamageLevel.MODERATE, "Equipo dañado");
     }
 
     @ParameterizedTest
@@ -139,5 +140,66 @@ class SanctionControllerTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].userId").value(user.getId()));
+    }
+
+    private SanctionResponse activeFor(User user) {
+        return sanctionService.createLossSanction(user.getId(), loanId(), "Pérdida");
+    }
+
+    @Test
+    void shouldLetAdminLiftAnActiveSanction() throws Exception {
+        SanctionResponse active = activeFor(users.create(Role.STUDENT));
+
+        mockMvc.perform(post("/api/sanctions/{id}/lift", active.id()).header("Authorization", bearer(Role.ADMIN))
+                        .contentType(APPLICATION_JSON).content("{\"reason\":\"Se encontró el ítem\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("LIFTED"))
+                .andExpect(jsonPath("$.adminNote").value("Se encontró el ítem"));
+    }
+
+    @Test
+    void shouldLetAdminReduceAnActiveSanction() throws Exception {
+        SanctionResponse active = activeFor(users.create(Role.STUDENT));
+
+        mockMvc.perform(post("/api/sanctions/{id}/reduce", active.id()).header("Authorization", bearer(Role.ADMIN))
+                        .contentType(APPLICATION_JSON).content("{\"days\":10,\"reason\":\"Primera falta\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void shouldReturn403WhenManagerLiftsOrReducesASanction() throws Exception {
+        SanctionResponse active = activeFor(users.create(Role.STUDENT));
+
+        mockMvc.perform(post("/api/sanctions/{id}/lift", active.id()).header("Authorization", bearer(Role.MANAGER))
+                        .contentType(APPLICATION_JSON).content("{\"reason\":\"x\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/sanctions/{id}/reduce", active.id()).header("Authorization", bearer(Role.MANAGER))
+                        .contentType(APPLICATION_JSON).content("{\"days\":5,\"reason\":\"x\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldReturn400WhenLiftReasonIsMissingAndConflictWhenSanctionIsNotActive() throws Exception {
+        SanctionResponse suggested = suggestedFor(users.create(Role.STUDENT));
+        SanctionResponse active = activeFor(users.create(Role.STUDENT));
+
+        mockMvc.perform(post("/api/sanctions/{id}/lift", active.id()).header("Authorization", bearer(Role.ADMIN))
+                        .contentType(APPLICATION_JSON).content("{\"reason\":\" \"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/sanctions/{id}/lift", suggested.id()).header("Authorization", bearer(Role.ADMIN))
+                        .contentType(APPLICATION_JSON).content("{\"reason\":\"x\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldConfirmWithoutDaysUsingThePolicyForTheLevel() throws Exception {
+        SanctionResponse suggested = suggestedFor(users.create(Role.STUDENT));
+
+        mockMvc.perform(post("/api/sanctions/{id}/confirm", suggested.id()).header("Authorization", bearer(Role.ADMIN))
+                        .contentType(APPLICATION_JSON).content("{\"damageLevel\":\"MINOR\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.damageLevel").value("MINOR"));
     }
 }

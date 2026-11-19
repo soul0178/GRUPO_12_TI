@@ -57,6 +57,53 @@ describe('ReturnLoanPage', () => {
     expect(screen.getByText(/fuera de servicio/)).toBeInTheDocument();
   });
 
+  it('pide el nivel del daño y lo envía al devolver dañado', async () => {
+    let body: unknown;
+    server.use(
+      http.get(`${API}/loans/1`, () => HttpResponse.json(loanFixture())),
+      http.post(`${API}/loans/1/return`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(loanFixture({ status: 'RETURNED', returnCondition: 'DAMAGED' }));
+      }),
+    );
+    renderPage();
+    await userEvent.selectOptions(
+      await screen.findByLabelText('Estado físico al devolver'),
+      'DAMAGED',
+    );
+
+    await userEvent.selectOptions(screen.getByLabelText('Nivel del daño'), 'SEVERE');
+    await userEvent.click(screen.getByRole('button', { name: 'Registrar devolución' }));
+
+    await vi.waitFor(() =>
+      expect(body).toMatchObject({ returnCondition: 'DAMAGED', damageLevel: 'SEVERE' }),
+    );
+  });
+
+  it('registra un ítem perdido y avisa de la sanción máxima', async () => {
+    let body: unknown;
+    server.use(
+      http.get(`${API}/loans/1`, () => HttpResponse.json(loanFixture())),
+      http.post(`${API}/loans/1/return`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(loanFixture({ status: 'RETURNED', returnCondition: 'LOST' }));
+      }),
+    );
+    renderPage();
+
+    await userEvent.selectOptions(
+      await screen.findByLabelText('Estado físico al devolver'),
+      'LOST',
+    );
+    expect(screen.getByText(/sanción máxima \(90 días\)/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Registrar devolución' }));
+
+    expect(await screen.findByText(/se registró como perdido/)).toBeInTheDocument();
+    expect(body).toMatchObject({ returnCondition: 'LOST' });
+    expect(body).not.toHaveProperty('damageLevel');
+    expect(screen.queryByText(/Devuelva al usuario su garantía/)).not.toBeInTheDocument();
+  });
+
   it('indica que el préstamo ya fue devuelto y no muestra el formulario', async () => {
     server.use(
       http.get(`${API}/loans/1`, () => HttpResponse.json(loanFixture({ status: 'RETURNED' }))),

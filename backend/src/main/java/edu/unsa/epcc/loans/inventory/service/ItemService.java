@@ -133,6 +133,12 @@ public class ItemService {
         item.setStatus(damaged ? ItemStatus.OUT_OF_SERVICE : ItemStatus.AVAILABLE);
     }
 
+    /** Da de baja el ítem cuando se registra como perdido en la devolución (RETIRED es definitivo). */
+    @Transactional
+    public void markAsLost(Long id) {
+        getItem(id).setStatus(ItemStatus.RETIRED);
+    }
+
     private void validateStatusChange(ItemStatus current, ItemStatus requested) {
         if (current == requested) {
             return;

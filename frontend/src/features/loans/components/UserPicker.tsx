@@ -12,13 +12,15 @@ import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 interface UserPickerProps {
   selected: UserSummary | null;
   onSelect: (user: UserSummary | null) => void;
+  /** Si es true, muestra todos los usuarios desde el inicio y el buscador solo filtra la lista (reportes). */
+  listAll?: boolean;
 }
 
 /** Busca un usuario por nombre, correo o código/DNI y permite elegirlo para la entrega. */
-export function UserPicker({ selected, onSelect }: UserPickerProps) {
+export function UserPicker({ selected, onSelect, listAll = false }: UserPickerProps) {
   const [text, setText] = useState('');
   const debounced = useDebouncedValue(text, 300);
-  const lookup = useUserLookup(debounced);
+  const lookup = useUserLookup(debounced, listAll);
 
   if (selected) {
     return (
@@ -63,7 +65,7 @@ export function UserPicker({ selected, onSelect }: UserPickerProps) {
         <p className="text-sm text-slate-500">No se encontraron usuarios.</p>
       )}
       {lookup.data && lookup.data.length > 0 && (
-        <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-inset ring-slate-200">
+        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-inset ring-slate-200">
           {lookup.data.map((user) => (
             <li key={user.id}>
               <button
@@ -76,7 +78,7 @@ export function UserPicker({ selected, onSelect }: UserPickerProps) {
                     {user.firstName} {user.lastName}
                   </span>
                   <span className="block text-xs text-slate-500">
-                    {user.email} · {user.documentNumber}
+                    {user.email} · {user.documentNumber} · {ROLE_LABELS[user.role]}
                   </span>
                 </span>
                 {!user.active && <Badge tone="red">Desactivado</Badge>}

@@ -3,6 +3,8 @@ import { useAuthStore } from '@/features/auth/store/authStore';
 import { SanctionTable } from '@/features/sanctions/components/SanctionTable';
 import {
   useConfirmSanction,
+  useLiftSanction,
+  useReduceSanction,
   useRejectSanction,
 } from '@/features/sanctions/hooks/useSanctionMutations';
 import { useSanctions } from '@/features/sanctions/hooks/useSanctions';
@@ -19,7 +21,7 @@ import { Pagination } from '@/shared/components/Pagination';
 
 const PAGE_SIZE = 10;
 
-/** Bandeja de sanciones para el personal; el ADMIN confirma o rechaza las sugeridas por daño (RF-08). */
+/** Bandeja de sanciones para el personal; el ADMIN confirma o rechaza las sugeridas por daño y reduce o levanta las activas (RF-08). */
 export function SanctionsPage() {
   const isAdmin = useAuthStore((state) => state.user?.role === 'ADMIN');
   const [status, setStatus] = useState<SanctionStatus | ''>('SUGGESTED');
@@ -27,13 +29,16 @@ export function SanctionsPage() {
   const sanctions = useSanctions(status || undefined, page, PAGE_SIZE);
   const confirm = useConfirmSanction();
   const reject = useRejectSanction();
-  const actionError = confirm.error ?? reject.error;
+  const lift = useLiftSanction();
+  const reduce = useReduceSanction();
+  const actionError = confirm.error ?? reject.error ?? lift.error ?? reduce.error;
+  const isUpdating = confirm.isPending || reject.isPending || lift.isPending || reduce.isPending;
 
   return (
     <section>
       <PageHeader
         title="Sanciones"
-        description="Sanciones por atraso (automáticas) y por posible daño (sugeridas, a confirmar por el administrador)."
+        description="Atraso, reserva no recogida y pérdida (automáticas) y daño (sugerido, a confirmar por el administrador)."
       />
       <div className="space-y-4">
         <Card className="p-4">
@@ -72,9 +77,11 @@ export function SanctionsPage() {
             <SanctionTable
               sanctions={sanctions.data.content}
               canResolve={isAdmin}
-              isUpdating={confirm.isPending || reject.isPending}
-              onConfirm={(id, days) => confirm.mutate({ id, days })}
+              isUpdating={isUpdating}
+              onConfirm={(id, days, damageLevel) => confirm.mutate({ id, days, damageLevel })}
               onReject={(id) => reject.mutate(id)}
+              onLift={(id, reason) => lift.mutate({ id, reason })}
+              onReduce={(id, days, reason) => reduce.mutate({ id, days, reason })}
             />
             <Pagination page={page} totalPages={sanctions.data.totalPages} onPageChange={setPage} />
           </Card>

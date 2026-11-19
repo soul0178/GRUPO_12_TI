@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 public enum PhysicalCondition {
     GOOD("Bueno"),
     FAIR("Regular"),
-    DAMAGED("Dañado");
+    DAMAGED("Dañado"),
+    /** Solo al devolver: el ítem se perdió. No se puede entregar un ítem perdido. */
+    LOST("Perdido");
 
     /** Nombre en español para mensajes al usuario. */
     private final String label;

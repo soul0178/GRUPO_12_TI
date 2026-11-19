@@ -9,17 +9,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import edu.unsa.epcc.loans.inventory.entity.Item;
 import edu.unsa.epcc.loans.inventory.entity.ItemStatus;
 import edu.unsa.epcc.loans.support.IntegrationTestBase;
+import edu.unsa.epcc.loans.support.MutableClock;
+import edu.unsa.epcc.loans.support.MutableClockConfig;
 import edu.unsa.epcc.loans.support.TestItemFactory;
 import edu.unsa.epcc.loans.support.TestUserFactory;
 import edu.unsa.epcc.loans.user.entity.Role;
 import edu.unsa.epcc.loans.user.entity.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** API de /loans: solo personal, validaciones (400) y conflictos de negocio (409). */
+/** API de /loans: solo personal, validaciones (400) y conflictos de negocio (409). Reloj fijo dentro del horario. */
+@Import(MutableClockConfig.class)
 class LoanControllerTest extends IntegrationTestBase {
 
     @Autowired
@@ -28,6 +33,13 @@ class LoanControllerTest extends IntegrationTestBase {
     private TestUserFactory users;
     @Autowired
     private TestItemFactory items;
+    @Autowired
+    private MutableClock clock;
+
+    @BeforeEach
+    void setUp() {
+        clock.reset();
+    }
 
     private String body(User user, Item item, String guarantee) {
         return """
@@ -139,7 +151,7 @@ class LoanControllerTest extends IntegrationTestBase {
     }
 
     @Test
-    void shouldLookupUsersOnlyForStaff() throws Exception {
+    void shouldLookupUsersOnlyForStaffAndListAllWhenTextIsBlank() throws Exception {
         User target = users.create(Role.STUDENT);
         String email = target.getEmail();
 
@@ -154,6 +166,7 @@ class LoanControllerTest extends IntegrationTestBase {
         mockMvc.perform(get("/api/users/lookup").param("text", " ")
                         .header("Authorization", users.bearerFor(users.create(Role.ADMIN))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$[?(@.email == '" + email + "')]").isNotEmpty())
+                .andExpect(jsonPath("$[0].passwordHash").doesNotExist());
     }
 }

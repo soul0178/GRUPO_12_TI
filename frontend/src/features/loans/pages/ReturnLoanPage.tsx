@@ -21,14 +21,22 @@ interface ReturnEffectsProps {
 
 /** Efectos de la devolución que el encargado debe conocer: atraso, posible daño y garantía. */
 function ReturnEffects({ loan, wasOverdue }: ReturnEffectsProps) {
+  const lost = loan.returnCondition === 'LOST';
   const worse =
-    loan.returnCondition !== null && isWorseCondition(loan.deliveryCondition, loan.returnCondition);
+    !lost &&
+    loan.returnCondition !== null &&
+    isWorseCondition(loan.deliveryCondition, loan.returnCondition);
   return (
     <div className="space-y-3">
       <Alert variant="success">
         {`Devolución registrada: ${loan.itemCode} de ${loan.userFullName}.`}
       </Alert>
-      {wasOverdue && (
+      {lost && (
+        <Alert variant="error">
+          El ítem se registró como perdido: se dio de baja y se aplicó la sanción máxima al usuario.
+        </Alert>
+      )}
+      {wasOverdue && !lost && (
         <Alert variant="error">
           El préstamo estaba vencido: se aplicó una sanción por atraso al usuario.
         </Alert>
@@ -42,7 +50,7 @@ function ReturnEffects({ loan, wasOverdue }: ReturnEffectsProps) {
       {loan.returnCondition === 'DAMAGED' && (
         <Alert variant="error">El ítem quedó fuera de servicio por volver dañado.</Alert>
       )}
-      {loan.guarantee && (
+      {loan.guarantee && !lost && (
         <Alert variant="success">
           {`Devuelva al usuario su garantía: ${loan.guarantee.description}.`}
         </Alert>
@@ -73,6 +81,7 @@ export function ReturnLoanPage() {
     setWasOverdue(current.status === 'OVERDUE');
     returnLoan.mutate({
       returnCondition: values.returnCondition,
+      damageLevel: values.returnCondition === 'DAMAGED' ? values.damageLevel : undefined,
       returnObservations: values.returnObservations?.trim() || undefined,
     });
   }

@@ -77,7 +77,107 @@ describe('SanctionsPage', () => {
     await userEvent.type(days, '5');
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
 
-    await vi.waitFor(() => expect(body).toEqual({ days: 5 }));
+    await vi.waitFor(() => expect(body).toEqual({ days: 5, damageLevel: 'MODERATE' }));
+  });
+
+  it('el administrador confirma sin días y con otro nivel: se aplica la política', async () => {
+    let body: unknown;
+    server.use(
+      http.get(`${API}/sanctions`, () => HttpResponse.json(page([sanction(1)]))),
+      http.post(`${API}/sanctions/1/confirm`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(sanction(1, 'ACTIVE'));
+      }),
+    );
+    loginAs('ADMIN');
+    renderWithProviders(<SanctionsPage />);
+
+    await userEvent.selectOptions(
+      await screen.findByLabelText('Nivel del daño para Usuario 1'),
+      'SEVERE',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+
+    await vi.waitFor(() => expect(body).toEqual({ damageLevel: 'SEVERE' }));
+  });
+
+  it('el administrador levanta una sanción activa con un motivo', async () => {
+    let body: unknown;
+    server.use(
+      http.get(`${API}/sanctions`, () => HttpResponse.json(page([sanction(1, 'ACTIVE')]))),
+      http.post(`${API}/sanctions/1/lift`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(sanction(1, 'LIFTED'));
+      }),
+    );
+    loginAs('ADMIN');
+    renderWithProviders(<SanctionsPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Levantar' }));
+    const confirm = screen.getByRole('button', { name: 'Confirmar levantamiento' });
+    expect(confirm).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Motivo para Usuario 1'), 'Se encontró el ítem');
+    await userEvent.click(confirm);
+
+    await vi.waitFor(() => expect(body).toEqual({ reason: 'Se encontró el ítem' }));
+  });
+
+  it('el administrador reduce una sanción activa a una nueva duración total', async () => {
+    let body: unknown;
+    server.use(
+      http.get(`${API}/sanctions`, () => HttpResponse.json(page([sanction(1, 'ACTIVE')]))),
+      http.post(`${API}/sanctions/1/reduce`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(sanction(1, 'ACTIVE'));
+      }),
+    );
+    loginAs('ADMIN');
+    renderWithProviders(<SanctionsPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reducir' }));
+    await userEvent.type(screen.getByLabelText('Nueva duración total en días para Usuario 1'), '7');
+    await userEvent.type(screen.getByLabelText('Motivo para Usuario 1'), 'Primera falta');
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar reducción' }));
+
+    await vi.waitFor(() => expect(body).toEqual({ days: 7, reason: 'Primera falta' }));
+  });
+
+  it('un baneo solo se puede levantar, no reducir', async () => {
+    server.use(
+      http.get(`${API}/sanctions`, () =>
+        HttpResponse.json(page([{ ...sanction(1, 'ACTIVE'), type: 'LOSS', causedBan: true }])),
+      ),
+    );
+    loginAs('ADMIN');
+    renderWithProviders(<SanctionsPage />);
+
+    expect(await screen.findByText('Baneo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Levantar' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reducir' })).not.toBeInTheDocument();
+  });
+
+  it('muestra el tipo, el nivel del daño y la nota del administrador', async () => {
+    server.use(
+      http.get(`${API}/sanctions`, () =>
+        HttpResponse.json(
+          page([
+            {
+              ...sanction(1, 'LIFTED'),
+              type: 'DAMAGE',
+              damageLevel: 'SEVERE',
+              adminNote: 'Error de registro',
+            },
+            { ...sanction(2, 'ACTIVE'), type: 'NO_SHOW', loanId: null, reservationId: 9 },
+          ]),
+        ),
+      ),
+    );
+    loginAs('MANAGER');
+    renderWithProviders(<SanctionsPage />);
+
+    expect(await screen.findByText(/Daño · Extremo/)).toBeInTheDocument();
+    expect(screen.getByText('Nota del administrador: Error de registro')).toBeInTheDocument();
+    expect(screen.getByText('Reserva no recogida')).toBeInTheDocument();
   });
 
   it('el administrador rechaza una sanción', async () => {
@@ -117,6 +217,7 @@ describe('SanctionsPage', () => {
 
     expect(screen.queryByRole('button', { name: 'Confirmar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Levantar' })).not.toBeInTheDocument();
   });
 
   it('envía el estado elegido en el filtro', async () => {

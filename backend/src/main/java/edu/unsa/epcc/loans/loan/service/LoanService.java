@@ -3,6 +3,7 @@ package edu.unsa.epcc.loans.loan.service;
 import edu.unsa.epcc.loans.common.dto.PageResponse;
 import edu.unsa.epcc.loans.common.exception.BusinessException;
 import edu.unsa.epcc.loans.common.exception.NotFoundException;
+import edu.unsa.epcc.loans.common.util.BusinessHours;
 import edu.unsa.epcc.loans.inventory.dto.ItemResponse;
 import edu.unsa.epcc.loans.inventory.entity.Item;
 import edu.unsa.epcc.loans.inventory.service.ItemService;
@@ -17,6 +18,7 @@ import edu.unsa.epcc.loans.loan.mapper.LoanMapper;
 import edu.unsa.epcc.loans.loan.repository.LoanRepository;
 import edu.unsa.epcc.loans.reservation.service.ReservationService;
 import edu.unsa.epcc.loans.sanction.service.PolicySettingsService;
+import edu.unsa.epcc.loans.sanction.entity.DamageLevel;
 import edu.unsa.epcc.loans.sanction.service.SanctionService;
 import edu.unsa.epcc.loans.user.dto.UserResponse;
 import edu.unsa.epcc.loans.user.entity.User;
@@ -49,13 +51,22 @@ public class LoanService {
     private final Clock clock;
 
     /**
-     * Registra la entrega de un ítem. El vencimiento es la hora actual más el plazo de la categoría.
+     * Registra la entrega de un ítem. El vencimiento es la hora actual más el plazo de la categoría, sin pasar de las 20:10 (hora de Lima) del día.
+     * Solo se entrega dentro del horario de atención (07:00 a 20:10).
      * Lanza BusinessException si el usuario está desactivado o sancionado, ya tiene el máximo de préstamos sin
      * devolver, el ítem no está disponible o falta la garantía que la categoría exige.
      * También lo rechaza si otro usuario tiene una reserva que se solapa; una reserva propia pasa a FULFILLED.
      */
     @Transactional
     public LoanResponse create(CreateLoanRequest request, Long deliveredById) {
+        if (request.deliveryCondition() == PhysicalCondition.LOST) {
+            throw new BusinessException("Un ítem no se puede entregar como perdido");
+        }
+        Instant now = Instant.now(clock);
+        if (!BusinessHours.isOpen(now)) {
+            throw new BusinessException("Los préstamos solo se entregan en el horario de atención ("
+                    + BusinessHours.LABEL + ")");
+        }
         UserResponse user = userService.findById(request.userId());
         validateUserCanBorrow(user);
 
@@ -65,8 +76,9 @@ public class LoanService {
             throw new BusinessException("La categoría " + item.category().name() + " exige registrar una garantía");
         }
 
-        Instant now = Instant.now(clock);
-        Instant dueAt = now.plus(Duration.ofHours(item.category().maxLoanHours()));
+        // El plazo de la categoría se recorta al cierre: todo se devuelve antes de las 20:10 del mismo día.
+        Instant dueAt = earliest(now.plus(Duration.ofHours(item.category().maxLoanHours())),
+                BusinessHours.closingOf(now));
         reservationService.registerDelivery(item.id(), user.id(), now, dueAt);
         Loan loan = new Loan();
         loan.setUser(entityManager.getReference(User.class, user.id()));
@@ -92,13 +104,18 @@ public class LoanService {
     /**
      * Registra la devolución de un préstamo. Devuelve el ítem al inventario (o lo deja fuera de servicio si volvió
      * dañado), marca la garantía como devuelta, crea una sanción por atraso si venció y sugiere una sanción por daño
-     * si el estado físico empeoró. Lanza BusinessException si el préstamo ya fue devuelto.
+     * (con el nivel indicado) si el estado físico empeoró. Con LOST el ítem se da de baja, la garantía queda retenida
+     * y se crea la sanción por pérdida. Lanza BusinessException si el préstamo ya fue devuelto.
      */
     @Transactional
     public LoanResponse returnLoan(Long id, ReturnLoanRequest request, Long returnedById) {
         Loan loan = getLoan(id);
         if (loan.getReturnedAt() != null) {
             throw new BusinessException("El préstamo ya fue devuelto");
+        }
+        PhysicalCondition condition = request.returnCondition();
+        if (condition == PhysicalCondition.DAMAGED && request.damageLevel() == null) {
+            throw new BusinessException("Indique el nivel del daño (leve, moderado o extremo)");
         }
         Instant now = Instant.now(clock);
         Long userId = loan.getUser().getId();
@@ -109,18 +126,30 @@ public class LoanService {
         loan.setReturnCondition(request.returnCondition());
         loan.setReturnObservations(request.returnObservations());
         loan.setReturnedBy(entityManager.getReference(User.class, returnedById));
+        loan.setReturnDamageLevel(condition == PhysicalCondition.DAMAGED ? request.damageLevel() : null);
+
+        if (condition == PhysicalCondition.LOST) {
+            // Un ítem perdido no vuelve: se da de baja y la garantía queda retenida. La pérdida ya es la sanción máxima.
+            itemService.markAsLost(loan.getItem().getId());
+            sanctionService.createLossSanction(userId, loan.getId(), "Pérdida del ítem " + loan.getItem().getCode()
+                    + " en el préstamo " + loan.getId());
+            log.info("Préstamo {} cerrado por pérdida del ítem", loan.getId());
+            return loanMapper.toResponse(loan, now);
+        }
         if (loan.getGuarantee() != null) {
             loan.getGuarantee().setReturned(true);
         }
-        itemService.markAsReturned(loan.getItem().getId(), request.returnCondition() == PhysicalCondition.DAMAGED);
+        itemService.markAsReturned(loan.getItem().getId(), condition == PhysicalCondition.DAMAGED);
 
         if (overdue) {
             sanctionService.createOverdueSanction(userId, loan.getId(), overdueTime);
         }
-        if (request.returnCondition().isWorseThan(loan.getDeliveryCondition())) {
-            sanctionService.suggestDamageSanction(userId, loan.getId(), "Posible daño en el préstamo " + loan.getId()
-                    + ": el ítem pasó de " + loan.getDeliveryCondition().getLabel() + " a "
-                    + request.returnCondition().getLabel());
+        if (condition.isWorseThan(loan.getDeliveryCondition())) {
+            // Pasar a Regular es desgaste leve; Dañado lleva el nivel que indicó el personal
+            DamageLevel damageLevel = condition == PhysicalCondition.DAMAGED ? request.damageLevel() : DamageLevel.MINOR;
+            sanctionService.suggestDamageSanction(userId, loan.getId(), damageLevel, "Posible daño "
+                    + damageLevel.getLabel().toLowerCase() + " en el préstamo " + loan.getId() + ": el ítem pasó de "
+                    + loan.getDeliveryCondition().getLabel() + " a " + condition.getLabel());
         }
         log.info("Préstamo {} devuelto (atrasado={})", loan.getId(), overdue);
         return loanMapper.toResponse(loan, now);
@@ -172,5 +201,9 @@ public class LoanService {
     private Loan getLoan(Long id) {
         return loanRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("No existe el préstamo con id " + id));
+    }
+
+    private static Instant earliest(Instant a, Instant b) {
+        return a.isBefore(b) ? a : b;
     }
 }

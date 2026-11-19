@@ -46,6 +46,29 @@ describe('UserHistoryPage', () => {
     expect(await screen.findByRole('heading', { name: 'Luis Quispe' })).toBeInTheDocument();
   });
 
+  it('muestra la lista de todos los usuarios sin escribir nada', async () => {
+    const person = (id: number, firstName: string, lastName: string) => ({
+      id,
+      firstName,
+      lastName,
+      email: `${firstName.toLowerCase()}@epcc.unsa.edu.pe`,
+      documentNumber: `7000000${id}`,
+      role: 'STUDENT',
+      active: true,
+    });
+    server.use(
+      http.get(`${API}/users/lookup`, () =>
+        HttpResponse.json([person(1, 'Ana', 'Rojas'), person(2, 'Luis', 'Quispe')]),
+      ),
+    );
+    loginAs('MANAGER');
+    renderAt('/reports/users');
+
+    expect(await screen.findByRole('button', { name: /Ana Rojas/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Luis Quispe/ })).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar usuario')).toHaveValue('');
+  });
+
   it('muestra el resumen y el historial del usuario', async () => {
     server.use(
       http.get(`${API}/reports/users/20/loans`, () =>

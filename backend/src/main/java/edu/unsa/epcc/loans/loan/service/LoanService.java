@@ -3,6 +3,7 @@ package edu.unsa.epcc.loans.loan.service;
 import edu.unsa.epcc.loans.common.dto.PageResponse;
 import edu.unsa.epcc.loans.common.exception.BusinessException;
 import edu.unsa.epcc.loans.common.exception.NotFoundException;
+import edu.unsa.epcc.loans.common.util.BusinessHours;
 import edu.unsa.epcc.loans.inventory.dto.ItemResponse;
 import edu.unsa.epcc.loans.inventory.entity.Item;
 import edu.unsa.epcc.loans.inventory.service.ItemService;
@@ -49,13 +50,19 @@ public class LoanService {
     private final Clock clock;
 
     /**
-     * Registra la entrega de un ítem. El vencimiento es la hora actual más el plazo de la categoría.
+     * Registra la entrega de un ítem. El vencimiento es la hora actual más el plazo de la categoría, sin pasar de las 20:10 (hora de Lima) del día.
+     * Solo se entrega dentro del horario de atención (07:00 a 20:10).
      * Lanza BusinessException si el usuario está desactivado o sancionado, ya tiene el máximo de préstamos sin
      * devolver, el ítem no está disponible o falta la garantía que la categoría exige.
      * También lo rechaza si otro usuario tiene una reserva que se solapa; una reserva propia pasa a FULFILLED.
      */
     @Transactional
     public LoanResponse create(CreateLoanRequest request, Long deliveredById) {
+        Instant now = Instant.now(clock);
+        if (!BusinessHours.isOpen(now)) {
+            throw new BusinessException("Los préstamos solo se entregan en el horario de atención ("
+                    + BusinessHours.LABEL + ")");
+        }
         UserResponse user = userService.findById(request.userId());
         validateUserCanBorrow(user);
 
@@ -65,8 +72,9 @@ public class LoanService {
             throw new BusinessException("La categoría " + item.category().name() + " exige registrar una garantía");
         }
 
-        Instant now = Instant.now(clock);
-        Instant dueAt = now.plus(Duration.ofHours(item.category().maxLoanHours()));
+        // El plazo de la categoría se recorta al cierre: todo se devuelve antes de las 20:10 del mismo día.
+        Instant dueAt = earliest(now.plus(Duration.ofHours(item.category().maxLoanHours())),
+                BusinessHours.closingOf(now));
         reservationService.registerDelivery(item.id(), user.id(), now, dueAt);
         Loan loan = new Loan();
         loan.setUser(entityManager.getReference(User.class, user.id()));
@@ -172,5 +180,9 @@ public class LoanService {
     private Loan getLoan(Long id) {
         return loanRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("No existe el préstamo con id " + id));
+    }
+
+    private static Instant earliest(Instant a, Instant b) {
+        return a.isBefore(b) ? a : b;
     }
 }

@@ -103,6 +103,19 @@ describe('NewReservationPage', () => {
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
+  it('no deja reservar fuera del horario de atención', async () => {
+    server.use(http.get(`${API}/items`, () => HttpResponse.json(itemsPage)));
+    renderPage();
+
+    await pickItem();
+    fillRange('2030-03-11T19:00', '2030-03-11T21:00');
+
+    expect(
+      await screen.findByText(/horario de atención \(07:00 a 20:10\)/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
+  });
+
   it('valida que la reserva empiece en el futuro', async () => {
     server.use(http.get(`${API}/items`, () => HttpResponse.json(itemsPage)));
     renderPage();

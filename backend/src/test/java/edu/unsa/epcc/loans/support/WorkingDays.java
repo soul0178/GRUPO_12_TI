@@ -1,31 +1,30 @@
 package edu.unsa.epcc.loans.support;
 
-import edu.unsa.epcc.loans.common.util.LimaTime;
 import java.time.DayOfWeek;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.TemporalAdjusters;
 
 /**
- * Las reservas no se permiten los domingos (hora de Lima). Las pruebas que reservan "dentro de unas horas" usan esto
- * para no fallar cuando se ejecutan en sábado por la noche o en domingo.
+ * Las reservas no se permiten los domingos y los préstamos/reservas solo caben entre las 07:00 y las 20:10 (hora de
+ * Lima). Las pruebas parten siempre de las 08:00 de un día no domingo para no depender de cuándo se ejecutan.
  */
 public final class WorkingDays {
 
     private static final ZoneId LIMA = ZoneId.of("America/Lima");
-    private static final Duration WINDOW = Duration.ofHours(12);
 
     private WorkingDays() {
     }
 
-    /** Devuelve {@code from} si las próximas 12 horas no tocan un domingo; si no, el lunes siguiente a las 10:00. */
-    public static Instant safeStart(Instant from) {
-        if (!LimaTime.overlapsSunday(from, from.plus(WINDOW))) {
-            return from;
+    /** Próximas 08:00 de Lima (estrictamente futuras) en un día que no sea domingo. */
+    public static Instant nextMorning(Instant from) {
+        LocalDate day = from.atZone(LIMA).toLocalDate();
+        while (true) {
+            Instant candidate = day.atTime(8, 0).atZone(LIMA).toInstant();
+            if (candidate.isAfter(from) && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                return candidate;
+            }
+            day = day.plusDays(1);
         }
-        LocalDate monday = from.atZone(LIMA).toLocalDate().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
-        return monday.atTime(10, 0).atZone(LIMA).toInstant();
     }
 }

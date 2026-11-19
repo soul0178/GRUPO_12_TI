@@ -133,12 +133,12 @@ public class UserService {
 
     /**
      * Busca usuarios por nombre, correo o código/DNI para el personal (máximo 10 resultados).
-     * Si el texto está vacío devuelve una lista vacía.
+     * Si el texto está vacío devuelve todos los usuarios ordenados por apellido (listado de los reportes).
      */
     @Transactional(readOnly = true)
     public List<UserSummaryResponse> lookup(String text) {
         if (text == null || text.isBlank()) {
-            return List.of();
+            return userRepository.findAll(Sort.by("lastName", "firstName")).stream().map(userMapper::toSummary).toList();
         }
         String pattern = "%" + text.trim().toLowerCase(Locale.ROOT) + "%";
         return userRepository.search(pattern, PageRequest.of(0, LOOKUP_LIMIT, Sort.by("lastName", "firstName")))

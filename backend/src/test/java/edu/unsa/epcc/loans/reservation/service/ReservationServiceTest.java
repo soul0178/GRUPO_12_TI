@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import edu.unsa.epcc.loans.common.exception.BusinessException;
+import edu.unsa.epcc.loans.common.util.BusinessHours;
 import edu.unsa.epcc.loans.common.exception.NotFoundException;
 import edu.unsa.epcc.loans.inventory.entity.Item;
 import edu.unsa.epcc.loans.inventory.entity.ItemStatus;
@@ -105,6 +106,43 @@ class ReservationServiceTest extends IntegrationTestBase {
 
         assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 10, 23), lima(2035, 3, 11, 1)))
                 .isInstanceOf(BusinessException.class).hasMessageContaining("domingos");
+    }
+
+    @Test
+    void shouldRejectReservationStartingBeforeOpening() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 6), lima(2035, 3, 12, 8)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("horario de atención");
+    }
+
+    @Test
+    void shouldRejectReservationEndingAfterClosing() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+
+        // Cierre 20:10: terminar a las 21:00 no se permite
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 19), lima(2035, 3, 12, 21)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("horario de atención");
+    }
+
+    @Test
+    void shouldRejectReservationSpanningTwoDays() {
+        Item item = items.create("Libro", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 10), lima(2035, 3, 13, 10)))
+                .isInstanceOf(BusinessException.class).hasMessageContaining("horario de atención");
+    }
+
+    @Test
+    void shouldAllowReservationBetweenOpeningAndClosing() {
+        Item item = items.create("Equipo", ItemStatus.AVAILABLE);
+        Instant opening = lima(2035, 3, 12, 7);
+        Instant closing = BusinessHours.closingOf(opening);
+
+        assertThat(reserve(users.create(Role.STUDENT), item, opening, opening.plus(Duration.ofHours(1))).status())
+                .isEqualTo(ReservationStatus.PENDING);
+        assertThat(reserve(users.create(Role.STUDENT), item, closing.minus(Duration.ofHours(1)), closing).status())
+                .isEqualTo(ReservationStatus.PENDING);
     }
 
     @Test

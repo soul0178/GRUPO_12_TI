@@ -11,7 +11,13 @@ import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
 import { PageHeader } from '@/shared/components/PageHeader';
-import { formatDateTime, limaLocalToIso, rangeTouchesSunday } from '@/shared/utils/dateFormat';
+import {
+  BUSINESS_HOURS_LABEL,
+  formatDateTime,
+  limaLocalToIso,
+  rangeTouchesSunday,
+  rangeWithinBusinessHours,
+} from '@/shared/utils/dateFormat';
 
 const MILLIS_PER_HOUR = 3_600_000;
 
@@ -30,6 +36,9 @@ function validateRange(start: string, end: string, item: Item): string | null {
   }
   if (rangeTouchesSunday(start, end)) {
     return 'No se pueden hacer reservas los domingos.';
+  }
+  if (!rangeWithinBusinessHours(start, end)) {
+    return `La reserva debe estar dentro del horario de atención (${BUSINESS_HOURS_LABEL}) y terminar el mismo día.`;
   }
   if (endMs - startMs > item.category.maxLoanHours * MILLIS_PER_HOUR) {
     return `La reserva no puede durar más de ${item.category.maxLoanHours} horas.`;

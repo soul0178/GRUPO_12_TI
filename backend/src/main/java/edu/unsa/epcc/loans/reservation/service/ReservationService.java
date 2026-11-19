@@ -3,6 +3,7 @@ package edu.unsa.epcc.loans.reservation.service;
 import edu.unsa.epcc.loans.common.dto.PageResponse;
 import edu.unsa.epcc.loans.common.exception.BusinessException;
 import edu.unsa.epcc.loans.common.exception.NotFoundException;
+import edu.unsa.epcc.loans.common.util.BusinessHours;
 import edu.unsa.epcc.loans.common.util.LimaTime;
 import edu.unsa.epcc.loans.inventory.entity.Item;
 import edu.unsa.epcc.loans.inventory.entity.ItemStatus;
@@ -187,6 +188,10 @@ public class ReservationService {
         }
         if (LimaTime.overlapsSunday(request.startAt(), request.endAt())) {
             throw new BusinessException("No se pueden hacer reservas los domingos");
+        }
+        if (!BusinessHours.contains(request.startAt(), request.endAt())) {
+            throw new BusinessException("La reserva debe estar dentro del horario de atención (" + BusinessHours.LABEL
+                    + ") y terminar el mismo día");
         }
         Duration max = Duration.ofHours(item.getCategory().getMaxLoanHours());
         if (Duration.between(request.startAt(), request.endAt()).compareTo(max) > 0) {

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import edu.unsa.epcc.loans.common.exception.BusinessException;
 import edu.unsa.epcc.loans.common.exception.NotFoundException;
+import edu.unsa.epcc.loans.common.util.BusinessHours;
 import edu.unsa.epcc.loans.inventory.entity.Item;
 import edu.unsa.epcc.loans.inventory.entity.ItemStatus;
 import edu.unsa.epcc.loans.inventory.repository.ItemRepository;
@@ -73,6 +74,39 @@ class LoanServiceTest extends IntegrationTestBase {
     }
 
     @Test
+    void shouldRejectLoanBeforeOpening() {
+        User user = users.create(Role.STUDENT);
+        Item book = items.create("Libro", ItemStatus.AVAILABLE);
+        clock.advance(Duration.ofMinutes(-61)); // 06:59
+
+        assertThatThrownBy(() -> deliver(user, book)).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("horario de atención");
+        assertThat(statusOf(book)).isEqualTo(ItemStatus.AVAILABLE);
+    }
+
+    @Test
+    void shouldRejectLoanAfterClosing() {
+        User user = users.create(Role.STUDENT);
+        Item book = items.create("Libro", ItemStatus.AVAILABLE);
+        clock.advance(Duration.ofHours(12).plusMinutes(11)); // 20:11
+
+        assertThatThrownBy(() -> deliver(user, book)).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("horario de atención");
+    }
+
+    @Test
+    void shouldCapDueDateAtClosingWhenCategoryTermExceedsIt() {
+        User user = users.create(Role.STUDENT);
+        Item equipment = items.create("Equipo", ItemStatus.AVAILABLE);
+        clock.advance(Duration.ofHours(11)); // 19:00 + 4 h pasaría del cierre
+
+        LoanResponse loan = loanService.create(request(user, equipment, DNI), manager.getId());
+
+        assertThat(loan.dueAt()).isEqualTo(BusinessHours.closingOf(loan.checkedOutAt()));
+        assertThat(Duration.between(loan.checkedOutAt(), loan.dueAt())).isEqualTo(Duration.ofHours(1).plusMinutes(10));
+    }
+
+    @Test
     void shouldDeliverItemWithDueDateFromCategoryAndMarkItOnLoan() {
         User user = users.create(Role.STUDENT);
         Item book = items.create("Libro", ItemStatus.AVAILABLE);
@@ -80,7 +114,8 @@ class LoanServiceTest extends IntegrationTestBase {
         LoanResponse loan = deliver(user, book);
 
         assertThat(loan.status()).isEqualTo(LoanStatus.ACTIVE);
-        assertThat(Duration.between(loan.checkedOutAt(), loan.dueAt())).isEqualTo(Duration.ofHours(72));
+        // 72 h superan el horario: el vencimiento se recorta al cierre (20:10 de Lima) del mismo día
+        assertThat(loan.dueAt()).isEqualTo(BusinessHours.closingOf(loan.checkedOutAt()));
         assertThat(loan.deliveredByName()).isNotBlank();
         assertThat(statusOf(book)).isEqualTo(ItemStatus.ON_LOAN);
     }

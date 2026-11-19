@@ -51,7 +51,7 @@ public class LoanService {
     private final Clock clock;
 
     /**
-     * Registra la entrega de un ítem. El vencimiento es la hora actual más el plazo de la categoría, sin pasar de las 20:10 (hora de Lima) del día.
+     * Registra la entrega de un ítem. El vencimiento es la hora actual más el plazo de la categoría, ajustado al horario de atención (nunca vence después de las 20:10 ni antes de las 07:00).
      * Solo se entrega dentro del horario de atención (07:00 a 20:10).
      * Lanza BusinessException si el usuario está desactivado o sancionado, ya tiene el máximo de préstamos sin
      * devolver, el ítem no está disponible o falta la garantía que la categoría exige.
@@ -76,9 +76,8 @@ public class LoanService {
             throw new BusinessException("La categoría " + item.category().name() + " exige registrar una garantía");
         }
 
-        // El plazo de la categoría se recorta al cierre: todo se devuelve antes de las 20:10 del mismo día.
-        Instant dueAt = earliest(now.plus(Duration.ofHours(item.category().maxLoanHours())),
-                BusinessHours.closingOf(now));
+        // Plazo de la categoría (libro 72 h, objeto 24 h, equipo 4 h); si cae fuera del horario se ajusta a las 20:10.
+        Instant dueAt = BusinessHours.adjustToOpenHours(now.plus(Duration.ofHours(item.category().maxLoanHours())));
         reservationService.registerDelivery(item.id(), user.id(), now, dueAt);
         Loan loan = new Loan();
         loan.setUser(entityManager.getReference(User.class, user.id()));
@@ -203,7 +202,4 @@ public class LoanService {
                 .orElseThrow(() -> new NotFoundException("No existe el préstamo con id " + id));
     }
 
-    private static Instant earliest(Instant a, Instant b) {
-        return a.isBefore(b) ? a : b;
-    }
 }

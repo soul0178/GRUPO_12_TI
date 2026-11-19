@@ -8,12 +8,14 @@ import { Button } from '@/shared/components/Button';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
-const RESULTS_SIZE = 8;
+/** En la entrega se muestran pocos resultados; en los reportes, todos los ítems (con scroll). */
+const AVAILABLE_RESULTS_SIZE = 8;
+const ALL_RESULTS_SIZE = 100;
 
 interface ItemPickerProps {
   selected: Item | null;
   onSelect: (item: Item | null) => void;
-  /** Si es false, busca entre todos los ítems sin importar su estado (reportes). Por defecto, solo disponibles. */
+  /** Si es false, lista todos los ítems sin importar su estado, desde el inicio (reportes). Por defecto, solo disponibles. */
   availableOnly?: boolean;
 }
 
@@ -24,7 +26,7 @@ export function ItemPicker({ selected, onSelect, availableOnly = true }: ItemPic
   const items = useItems(
     { text: debounced, status: availableOnly ? 'AVAILABLE' : undefined },
     0,
-    RESULTS_SIZE,
+    availableOnly ? AVAILABLE_RESULTS_SIZE : ALL_RESULTS_SIZE,
   );
 
   if (selected) {
@@ -74,7 +76,7 @@ export function ItemPicker({ selected, onSelect, availableOnly = true }: ItemPic
         </p>
       )}
       {items.data && items.data.content.length > 0 && (
-        <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-inset ring-slate-200">
+        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-inset ring-slate-200">
           {items.data.content.map((item) => (
             <li key={item.id}>
               <button

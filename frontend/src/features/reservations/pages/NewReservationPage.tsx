@@ -39,7 +39,7 @@ function validateRange(start: string, end: string, item: Item): string | null {
     return 'No se pueden hacer reservas los domingos.';
   }
   if (!rangeWithinBusinessHours(start, end)) {
-    return `La reserva debe estar dentro del horario de atención (${BUSINESS_HOURS_LABEL}) y terminar el mismo día.`;
+    return `La reserva debe empezar y terminar dentro del horario de atención (${BUSINESS_HOURS_LABEL}).`;
   }
   if (endMs - startMs > item.category.maxLoanHours * MILLIS_PER_HOUR) {
     return `La reserva no puede durar más de ${item.category.maxLoanHours} horas.`;

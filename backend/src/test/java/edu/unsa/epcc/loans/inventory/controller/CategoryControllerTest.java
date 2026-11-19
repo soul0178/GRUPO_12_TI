@@ -57,13 +57,23 @@ class CategoryControllerTest extends IntegrationTestBase {
     @Test
     void shouldUpdateCategoryPolicyWhenAdmin() throws Exception {
         Category category = items.category("Objeto");
+        int originalHours = category.getMaxLoanHours();
+        boolean originalGuarantee = category.isRequiresGuarantee();
 
-        mockMvc.perform(put("/api/categories/" + category.getId()).header("Authorization", bearer(Role.ADMIN))
-                        .contentType(APPLICATION_JSON)
-                        .content("{\"maxLoanHours\":48,\"requiresGuarantee\":true}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.maxLoanHours").value(48))
-                .andExpect(jsonPath("$.requiresGuarantee").value(true));
+        try {
+            mockMvc.perform(put("/api/categories/" + category.getId()).header("Authorization", bearer(Role.ADMIN))
+                            .contentType(APPLICATION_JSON)
+                            .content("{\"maxLoanHours\":48,\"requiresGuarantee\":true}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.maxLoanHours").value(48))
+                    .andExpect(jsonPath("$.requiresGuarantee").value(true));
+        } finally {
+            // La base se comparte entre pruebas: se devuelve la categoría a su política original
+            mockMvc.perform(put("/api/categories/" + category.getId()).header("Authorization", bearer(Role.ADMIN))
+                    .contentType(APPLICATION_JSON)
+                    .content("{\"maxLoanHours\":" + originalHours + ",\"requiresGuarantee\":" + originalGuarantee
+                            + "}"));
+        }
     }
 
     @ParameterizedTest

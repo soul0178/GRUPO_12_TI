@@ -75,6 +75,20 @@ class LoanServiceTest extends IntegrationTestBase {
     }
 
     @Test
+    void shouldGiveObjectsTwentyFourHoursAndKeepTheDueDateInsideTheSchedule() {
+        User user = users.create(Role.STUDENT);
+        Item object = items.create("Objeto", ItemStatus.AVAILABLE);
+        clock.advance(Duration.ofHours(10)); // 18:00
+
+        // Se manda garantía por si otra prueba cambió la categoría a "exige garantía" (la base se comparte)
+        LoanResponse loan = loanService.create(request(user, object, DNI), manager.getId());
+
+        assertThat(Duration.between(loan.checkedOutAt(), loan.dueAt()))
+                .isEqualTo(Duration.ofHours(object.getCategory().getMaxLoanHours()));
+        assertThat(BusinessHours.isOpen(loan.dueAt())).isTrue();
+    }
+
+    @Test
     void shouldRejectLoanBeforeOpening() {
         User user = users.create(Role.STUDENT);
         Item book = items.create("Libro", ItemStatus.AVAILABLE);
@@ -96,7 +110,7 @@ class LoanServiceTest extends IntegrationTestBase {
     }
 
     @Test
-    void shouldCapDueDateAtClosingWhenCategoryTermExceedsIt() {
+    void shouldMoveDueDateToClosingWhenItWouldFallAfterClosing() {
         User user = users.create(Role.STUDENT);
         Item equipment = items.create("Equipo", ItemStatus.AVAILABLE);
         clock.advance(Duration.ofHours(11)); // 19:00 + 4 h pasaría del cierre
@@ -115,8 +129,8 @@ class LoanServiceTest extends IntegrationTestBase {
         LoanResponse loan = deliver(user, book);
 
         assertThat(loan.status()).isEqualTo(LoanStatus.ACTIVE);
-        // 72 h superan el horario: el vencimiento se recorta al cierre (20:10 de Lima) del mismo día
-        assertThat(loan.dueAt()).isEqualTo(BusinessHours.closingOf(loan.checkedOutAt()));
+        assertThat(Duration.between(loan.checkedOutAt(), loan.dueAt())).isEqualTo(Duration.ofHours(72));
+        assertThat(BusinessHours.isOpen(loan.dueAt())).isTrue();
         assertThat(loan.deliveredByName()).isNotBlank();
         assertThat(statusOf(book)).isEqualTo(ItemStatus.ON_LOAN);
     }

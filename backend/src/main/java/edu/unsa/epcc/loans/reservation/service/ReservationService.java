@@ -194,8 +194,8 @@ public class ReservationService {
             throw new BusinessException("No se pueden hacer reservas los domingos");
         }
         if (!BusinessHours.contains(request.startAt(), request.endAt())) {
-            throw new BusinessException("La reserva debe estar dentro del horario de atención (" + BusinessHours.LABEL
-                    + ") y terminar el mismo día");
+            throw new BusinessException("La reserva debe empezar y terminar dentro del horario de atención ("
+                    + BusinessHours.LABEL + ")");
         }
         Duration max = Duration.ofHours(item.getCategory().getMaxLoanHours());
         if (Duration.between(request.startAt(), request.endAt()).compareTo(max) > 0) {

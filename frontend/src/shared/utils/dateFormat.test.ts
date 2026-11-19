@@ -42,7 +42,7 @@ describe('rangeTouchesSunday', () => {
 });
 
 describe('rangeWithinBusinessHours', () => {
-  it('acepta rangos del mismo día entre las 07:00 y las 20:10', () => {
+  it('acepta rangos entre las 07:00 y las 20:10', () => {
     expect(rangeWithinBusinessHours('2030-03-12T07:00', '2030-03-12T20:10')).toBe(true);
     expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-12T12:00')).toBe(true);
   });
@@ -52,7 +52,13 @@ describe('rangeWithinBusinessHours', () => {
     expect(rangeWithinBusinessHours('2030-03-12T19:00', '2030-03-12T20:11')).toBe(false);
   });
 
-  it('rechaza rangos que cruzan de un día a otro', () => {
-    expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-13T10:00')).toBe(false);
+  it('acepta rangos de varios días si empiezan y terminan dentro del horario (libros 72 h, objetos 24 h)', () => {
+    expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-13T10:00')).toBe(true);
+    expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-15T10:00')).toBe(true);
+  });
+
+  it('rechaza rangos de varios días que terminan fuera del horario', () => {
+    expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-13T21:00')).toBe(false);
+    expect(rangeWithinBusinessHours('2030-03-12T10:00', '2030-03-13T06:00')).toBe(false);
   });
 });

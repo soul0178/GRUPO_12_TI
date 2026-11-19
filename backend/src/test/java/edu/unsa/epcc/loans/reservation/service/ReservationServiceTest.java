@@ -129,10 +129,22 @@ class ReservationServiceTest extends IntegrationTestBase {
     }
 
     @Test
-    void shouldRejectReservationSpanningTwoDays() {
-        Item item = items.create("Libro", ItemStatus.AVAILABLE);
+    void shouldAllowMultiDayReservationsWhenStartAndEndAreInsideTheSchedule() {
+        Item book = items.create("Libro", ItemStatus.AVAILABLE);
+        Item object = items.create("Objeto", ItemStatus.AVAILABLE);
 
-        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), item, lima(2035, 3, 12, 10), lima(2035, 3, 13, 10)))
+        // Libro: hasta 72 h; Objeto: hasta 24 h; siempre empezando y terminando entre 07:00 y 20:10
+        assertThat(reserve(users.create(Role.STUDENT), book, lima(2035, 3, 12, 10), lima(2035, 3, 14, 10)).status())
+                .isEqualTo(ReservationStatus.PENDING);
+        assertThat(reserve(users.create(Role.STUDENT), object, lima(2035, 3, 12, 10), lima(2035, 3, 13, 10)).status())
+                .isEqualTo(ReservationStatus.PENDING);
+    }
+
+    @Test
+    void shouldRejectMultiDayReservationEndingOutsideTheSchedule() {
+        Item book = items.create("Libro", ItemStatus.AVAILABLE);
+
+        assertThatThrownBy(() -> reserve(users.create(Role.STUDENT), book, lima(2035, 3, 12, 10), lima(2035, 3, 13, 21)))
                 .isInstanceOf(BusinessException.class).hasMessageContaining("horario de atención");
     }
 

@@ -83,7 +83,7 @@ public class ReportService {
                         .map(loan -> loanMapper.toResponse(loan, now)));
         LoanHistorySummary summary = new LoanHistorySummary(counts.getTotalLoans(), counts.getActiveLoans(),
                 counts.getOverdueLoans(), counts.getReturnedLoans(), counts.getLateReturns(),
-                counts.getDamagedReturns());
+                counts.getNormalReturns(), counts.getDamagedReturns(), counts.getLostReturns());
         return new LoanHistoryReport(subject, from, to, now, summary, loans);
     }
 }

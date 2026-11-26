@@ -8,14 +8,16 @@ export interface ReportSubject {
   detail: string;
 }
 
-/** Totales del historial: total = activos + vencidos + devueltos. */
+/** Totales del historial: total = activos + vencidos + devueltos; devueltos = normales + dañados + perdidos. */
 export interface LoanHistorySummary {
   total: number;
   active: number;
   overdue: number;
   returned: number;
   returnedLate: number;
+  returnedNormal: number;
   returnedDamaged: number;
+  returnedLost: number;
 }
 
 /** Historial de préstamos de un usuario o de un ítem (LoanHistoryReport). */

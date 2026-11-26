@@ -60,7 +60,13 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
                    count(case when l.returnedAt is not null then 1 end) as returnedLoans,
                    count(case when l.returnedAt is not null and l.returnedAt > l.dueAt then 1 end) as lateReturns,
                    count(case when l.returnCondition = edu.unsa.epcc.loans.loan.entity.PhysicalCondition.DAMAGED
-                         then 1 end) as damagedReturns
+                         then 1 end) as damagedReturns,
+                   count(case when l.returnedAt is not null
+                         and l.returnCondition <> edu.unsa.epcc.loans.loan.entity.PhysicalCondition.DAMAGED
+                         and l.returnCondition <> edu.unsa.epcc.loans.loan.entity.PhysicalCondition.LOST
+                         then 1 end) as normalReturns,
+                   count(case when l.returnCondition = edu.unsa.epcc.loans.loan.entity.PhysicalCondition.LOST
+                         then 1 end) as lostReturns
             from Loan l
             where (:userId is null or l.user.id = :userId)
               and (:itemId is null or l.item.id = :itemId)

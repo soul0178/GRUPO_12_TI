@@ -58,6 +58,8 @@ class ReportControllerTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.summary.returned").value(1))
                 .andExpect(jsonPath("$.summary.returnedLate").value(1))
                 .andExpect(jsonPath("$.summary.returnedDamaged").value(1))
+                .andExpect(jsonPath("$.summary.returnedNormal").value(0))
+                .andExpect(jsonPath("$.summary.returnedLost").value(0))
                 .andExpect(jsonPath("$.loans.totalElements").value(2))
                 .andExpect(jsonPath("$.loans.content[0].status").value("ACTIVE"))
                 .andExpect(jsonPath("$.generatedAt").exists());

@@ -181,16 +181,17 @@ describe('NewLoanPage', () => {
       expect(await screen.findByText('Entrega registrada')).toBeInTheDocument();
     });
 
-    it('permite cambiar el usuario precargado', async () => {
+    it('no permite cambiar el usuario ni el ítem de la reserva', async () => {
       mockPrefill();
       loginAs('MANAGER');
       renderFromReservation();
 
-      await userEvent.click(await screen.findByRole('button', { name: 'Cambiar usuario' }));
-
-      expect(screen.getByLabelText('Buscar usuario')).toBeInTheDocument();
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
-      expect(screen.getByText('EQ-001 · Laptop')).toBeInTheDocument();
+      expect(await screen.findByText('Luis Quispe')).toBeInTheDocument();
+      expect(await screen.findByText('EQ-001 · Laptop')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Cambiar usuario' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Cambiar ítem' })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Buscar usuario')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Buscar ítem/)).not.toBeInTheDocument();
     });
 
     it('sin reserva, la pantalla empieza vacía como siempre', () => {

@@ -86,9 +86,35 @@ class ReportServiceTest extends IntegrationTestBase {
         assertThat(report.summary().overdue()).isEqualTo(1);
         assertThat(report.summary().returned()).isEqualTo(2);
         assertThat(report.summary().returnedLate()).isEqualTo(1);
+        assertThat(report.summary().returnedNormal()).isEqualTo(1);
         assertThat(report.summary().returnedDamaged()).isEqualTo(1);
+        assertThat(report.summary().returnedLost()).isZero();
         assertThat(report.loans().totalElements()).isEqualTo(4);
         assertThat(report.loans().content()).extracting(LoanResponse::userId).containsOnly(user.getId());
+    }
+
+    @Test
+    void shouldBreakDownReturnsIntoNormalDamagedAndLost() {
+        User other = users.create(Role.STUDENT);
+        Instant out = now.minus(Duration.ofDays(8));
+        loans.create(other, newItem(), out, out.plus(Duration.ofHours(4)), out.plus(Duration.ofHours(2)),
+                PhysicalCondition.GOOD);
+        loans.create(other, newItem(), out, out.plus(Duration.ofHours(4)), out.plus(Duration.ofHours(2)),
+                PhysicalCondition.FAIR);
+        loans.create(other, newItem(), out, out.plus(Duration.ofHours(4)), out.plus(Duration.ofHours(2)),
+                PhysicalCondition.DAMAGED);
+        loans.create(other, newItem(), out, out.plus(Duration.ofHours(4)), out.plus(Duration.ofHours(2)),
+                PhysicalCondition.LOST);
+        loans.create(other, newItem(), out, now.plus(Duration.ofHours(1)), null, null);
+
+        var summary = reportService.userHistory(other.getId(), null, null, null, PAGE).summary();
+
+        assertThat(summary.returned()).isEqualTo(4);
+        assertThat(summary.returnedNormal()).isEqualTo(2);
+        assertThat(summary.returnedDamaged()).isEqualTo(1);
+        assertThat(summary.returnedLost()).isEqualTo(1);
+        assertThat(summary.returnedNormal() + summary.returnedDamaged() + summary.returnedLost())
+                .isEqualTo(summary.returned());
     }
 
     @Test

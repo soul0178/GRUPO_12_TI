@@ -96,8 +96,18 @@ describe('UserHistoryPage', () => {
     expect(screen.getByText('luis@epcc.unsa.edu.pe · 72345678')).toBeInTheDocument();
     const total = screen.getByText('Total').parentElement as HTMLElement;
     expect(within(total).getByText('7')).toBeInTheDocument();
-    const late = screen.getByText('Devueltos con atraso').parentElement as HTMLElement;
-    expect(within(late).getByText('3')).toBeInTheDocument();
+    const returns = screen.getByRole('region', { name: 'Devoluciones' });
+    const expected = {
+      'Total devoluciones': '4',
+      'Devoluciones normales': '2',
+      'Devoluciones dañadas': '1',
+      'Devoluciones perdidas': '1',
+    };
+    for (const [label, value] of Object.entries(expected)) {
+      const card = within(returns).getByText(label).parentElement as HTMLElement;
+      expect(within(card).getByText(value)).toBeInTheDocument();
+    }
+    expect(within(returns).getByText(/3 se hicieron con atraso/)).toBeInTheDocument();
     expect(screen.getByText('EQ-001')).toBeInTheDocument();
     expect(screen.getByText('LB-010')).toBeInTheDocument();
     expect(screen.getByText('Con atraso')).toBeInTheDocument();

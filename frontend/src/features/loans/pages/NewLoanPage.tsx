@@ -21,10 +21,13 @@ import { formatDateTime } from '@/shared/utils/dateFormat';
 
 /** Pantalla donde el encargado registra la entrega de un ítem a un usuario (RF-04, RF-07). */
 export function NewLoanPage() {
-  // Si se llega desde "Entregar" en una reserva, el usuario y el ítem vienen elegidos; el encargado puede cambiarlos.
+  // Si se llega desde "Entregar" en una reserva, el usuario y el ítem vienen elegidos; no se pueden cambiar.
   const reservation = (useLocation().state as { reservation?: Reservation } | null)?.reservation;
   const prefilledItem = useItem(reservation?.itemId);
   const prefilledUsers = useUserLookup(reservation?.userEmail ?? '');
+  // Al terminar la entrega de una reserva, la siguiente entrega vuelve a ser libre.
+  const [reservationDone, setReservationDone] = useState(false);
+  const locked = reservation !== undefined && !reservationDone;
   // undefined = sin tocar (vale la precarga); null = el encargado lo quitó
   const [pickedUser, setPickedUser] = useState<UserSummary | null | undefined>(undefined);
   const [pickedItem, setPickedItem] = useState<Item | null | undefined>(undefined);
@@ -33,8 +36,6 @@ export function NewLoanPage() {
       ? pickedUser
       : (prefilledUsers.data?.find((candidate) => candidate.id === reservation?.userId) ?? null);
   const item = pickedItem !== undefined ? pickedItem : (prefilledItem.data ?? null);
-  const fromReservation =
-    reservation !== undefined && pickedUser === undefined && pickedItem === undefined;
   const [created, setCreated] = useState<Loan | null>(null);
   const createLoan = useCreateLoan();
 
@@ -66,6 +67,7 @@ export function NewLoanPage() {
 
   function startAnother() {
     setCreated(null);
+    setReservationDone(true);
     setPickedUser(null);
     setPickedItem(null);
     createLoan.reset();
@@ -96,11 +98,19 @@ export function NewLoanPage() {
         description="Elija al usuario y el ítem, y complete los datos."
       />
       <Card className="max-w-3xl space-y-6 p-6">
-        {fromReservation && reservation && (
+        {locked && reservation && (
           <Alert variant="info">{`Entrega de la reserva de ${reservation.userFullName}: ${reservation.itemCode}, del ${formatDateTime(reservation.startAt)} al ${formatDateTime(reservation.endAt)}.`}</Alert>
         )}
-        <UserPicker selected={user} onSelect={(value) => changeSelection(setPickedUser, value)} />
-        <ItemPicker selected={item} onSelect={(value) => changeSelection(setPickedItem, value)} />
+        <UserPicker
+          selected={user}
+          locked={locked}
+          onSelect={(value) => changeSelection(setPickedUser, value)}
+        />
+        <ItemPicker
+          selected={item}
+          locked={locked}
+          onSelect={(value) => changeSelection(setPickedItem, value)}
+        />
         {user && item && (
           <LoanForm
             requiresGuarantee={item.category.requiresGuarantee}

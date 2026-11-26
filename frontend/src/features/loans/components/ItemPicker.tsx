@@ -17,10 +17,17 @@ interface ItemPickerProps {
   onSelect: (item: Item | null) => void;
   /** Si es false, lista todos los ítems sin importar su estado, desde el inicio (reportes). Por defecto, solo disponibles. */
   availableOnly?: boolean;
+  /** Si es true, el ítem no se puede cambiar (entrega de una reserva). */
+  locked?: boolean;
 }
 
 /** Busca ítems por código o nombre y permite elegir uno (para la entrega o para un reporte). */
-export function ItemPicker({ selected, onSelect, availableOnly = true }: ItemPickerProps) {
+export function ItemPicker({
+  selected,
+  onSelect,
+  availableOnly = true,
+  locked = false,
+}: ItemPickerProps) {
   const [text, setText] = useState('');
   const debounced = useDebouncedValue(text, 300);
   const items = useItems(
@@ -28,6 +35,10 @@ export function ItemPicker({ selected, onSelect, availableOnly = true }: ItemPic
     0,
     availableOnly ? AVAILABLE_RESULTS_SIZE : ALL_RESULTS_SIZE,
   );
+
+  if (locked && !selected) {
+    return <p className="text-sm text-slate-500">Cargando ítem…</p>;
+  }
 
   if (selected) {
     return (
@@ -40,16 +51,18 @@ export function ItemPicker({ selected, onSelect, availableOnly = true }: ItemPic
             {selected.category.name} · plazo {selected.category.maxLoanHours} h
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            setText('');
-            onSelect(null);
-          }}
-        >
-          Cambiar ítem
-        </Button>
+        {!locked && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setText('');
+              onSelect(null);
+            }}
+          >
+            Cambiar ítem
+          </Button>
+        )}
       </div>
     );
   }

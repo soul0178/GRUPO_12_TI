@@ -1,8 +1,9 @@
 package edu.unsa.epcc.loans.report.dto;
 
 /**
- * Resumen de un historial. {@code total = active + overdue + returned}. {@code returnedLate} y
- * {@code returnedDamaged} son subconjuntos de {@code returned}.
+ * Resumen de un historial. {@code total = active + overdue + returned}. {@code returned} son todas las
+ * devoluciones y {@code returnedNormal + returnedDamaged + returnedLost = returned}. {@code returnedLate} es un
+ * subconjunto de {@code returned}.
  */
 public record LoanHistorySummary(
         long total,
@@ -10,5 +11,7 @@ public record LoanHistorySummary(
         long overdue,
         long returned,
         long returnedLate,
-        long returnedDamaged) {
+        long returnedNormal,
+        long returnedDamaged,
+        long returnedLost) {
 }

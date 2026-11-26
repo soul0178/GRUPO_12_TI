@@ -20,4 +20,10 @@ public interface LoanHistoryCounts {
 
     /** Devueltos con el estado físico "dañado". */
     Long getDamagedReturns();
+
+    /** Devueltos sin daño ni pérdida (estado físico bueno o regular). */
+    Long getNormalReturns();
+
+    /** Cerrados por pérdida del ítem (estado físico "perdido"). */
+    Long getLostReturns();
 }

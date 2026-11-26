@@ -14,13 +14,24 @@ interface UserPickerProps {
   onSelect: (user: UserSummary | null) => void;
   /** Si es true, muestra todos los usuarios desde el inicio y el buscador solo filtra la lista (reportes). */
   listAll?: boolean;
+  /** Si es true, el usuario no se puede cambiar (entrega de una reserva). */
+  locked?: boolean;
 }
 
 /** Busca un usuario por nombre, correo o código/DNI y permite elegirlo para la entrega. */
-export function UserPicker({ selected, onSelect, listAll = false }: UserPickerProps) {
+export function UserPicker({
+  selected,
+  onSelect,
+  listAll = false,
+  locked = false,
+}: UserPickerProps) {
   const [text, setText] = useState('');
   const debounced = useDebouncedValue(text, 300);
   const lookup = useUserLookup(debounced, listAll);
+
+  if (locked && !selected) {
+    return <p className="text-sm text-slate-500">Cargando usuario…</p>;
+  }
 
   if (selected) {
     return (
@@ -33,16 +44,18 @@ export function UserPicker({ selected, onSelect, listAll = false }: UserPickerPr
             {selected.email} · {selected.documentNumber} · {ROLE_LABELS[selected.role]}
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            setText('');
-            onSelect(null);
-          }}
-        >
-          Cambiar usuario
-        </Button>
+        {!locked && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setText('');
+              onSelect(null);
+            }}
+          >
+            Cambiar usuario
+          </Button>
+        )}
       </div>
     );
   }

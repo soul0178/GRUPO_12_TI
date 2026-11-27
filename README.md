@@ -87,3 +87,14 @@ docker exec -i loans-db psql -U loans -d loans -v ON_ERROR_STOP=1 < backend/db/s
 
 Crea 48 alumnos, 5 docentes, 2 administrativos, 20 ítems (8 equipos, 6 libros, 6 objetos) y 5 préstamos vigentes el 2 de diciembre de 2026.
 Todos los usuarios nuevos tienen la contraseña inicial `Unsa2026`. El script es idempotente: se puede repetir sin duplicar datos.
+
+
+## Historial de demostración (movimiento de meses pasados)
+
+Después de cargar `demo-data.sql`, este script **borra todos los préstamos, garantías, reservas y sanciones** y genera cerca de 500 préstamos entre el 17-ago y el 25-nov-2026 (devoluciones normales, con atraso, dañadas y perdidas, con sus sanciones y reservas). Conserva usuarios, ítems y categorías, y deja 5 préstamos vigentes el 2-dic-2026:
+
+```bash
+docker exec -i loans-db psql -U loans -d loans -v ON_ERROR_STOP=1 < backend/db/seed/historial-demo.sql
+```
+
+Se puede repetir: siempre produce el mismo historial.

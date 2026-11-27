@@ -9,7 +9,10 @@ describe('rutas de la aplicación', () => {
     renderRoutes(routes, '/');
 
     expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Sistema de Préstamos EPCC' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation')).getByRole('link', { name: 'Mi perfil' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Inicio' })).not.toBeInTheDocument();
     expect(screen.getByText('Ana Pérez')).toBeInTheDocument();
   });
 

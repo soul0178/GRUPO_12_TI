@@ -2,7 +2,6 @@ import { Navigate } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import { AppLayout } from '@/app/layout/AppLayout';
 import { ForbiddenPage } from '@/app/pages/ForbiddenPage';
-import { HomePage } from '@/app/pages/HomePage';
 import { NotFoundPage } from '@/app/pages/NotFoundPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
@@ -35,7 +34,7 @@ export const routes: RouteObject[] = [
       {
         element: <AppLayout />,
         children: [
-          { path: '/', element: <HomePage /> },
+          { path: '/', element: <Navigate to="/profile" replace /> },
           { path: '/items', element: <CatalogPage /> },
           { path: '/reservations', element: <MyReservationsPage /> },
           { path: '/reservations/new', element: <NewReservationPage /> },

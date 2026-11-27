@@ -15,10 +15,9 @@ interface NavItem {
 
 /** Enlaces de la barra de navegación; cada módulo agrega los suyos aquí. */
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Inicio', to: '/' },
+  { label: 'Mi perfil', to: '/profile' },
   { label: 'Catálogo', to: '/items' },
   { label: 'Reservas', to: '/reservations' },
-  { label: 'Mi perfil', to: '/profile' },
   { label: 'Préstamos', to: '/loans', roles: ['MANAGER', 'ADMIN'] },
   { label: 'Sanciones', to: '/sanctions', roles: ['MANAGER', 'ADMIN'] },
   { label: 'Reportes', to: '/reports', roles: ['MANAGER', 'ADMIN'], end: false },

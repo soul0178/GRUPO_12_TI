@@ -11,6 +11,7 @@ describe('PolicySettingsPage', () => {
   beforeEach(() => {
     loginAs('ADMIN');
     server.use(
+      http.get(`${API}/categories`, () => HttpResponse.json([])),
       http.get(`${API}/settings`, () =>
         HttpResponse.json({ maxActiveItems: 3, reservationExpirationMinutes: 30 }),
       ),
@@ -74,5 +75,17 @@ describe('PolicySettingsPage', () => {
     expect(
       await screen.findByText('No tiene permiso para realizar esta acción'),
     ).toBeInTheDocument();
+  });
+
+  it('incluye las categorías en la misma ventana', async () => {
+    server.use(
+      http.get(`${API}/categories`, () =>
+        HttpResponse.json([{ id: 1, name: 'Equipo', maxLoanHours: 4, requiresGuarantee: true }]),
+      ),
+    );
+    renderWithProviders(<PolicySettingsPage />);
+
+    expect(await screen.findByRole('heading', { name: 'Categorías' })).toBeInTheDocument();
+    expect(await screen.findByLabelText('Plazo máximo en horas de Equipo')).toHaveValue(4);
   });
 });

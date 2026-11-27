@@ -11,7 +11,9 @@ import { EmptyState } from '@/shared/components/EmptyState';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Pagination } from '@/shared/components/Pagination';
+import { INPUT_CLASSES } from '@/shared/components/FormField';
 import { PRIMARY_LINK_CLASSES } from '@/shared/components/buttonLinkClasses';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
 const PAGE_SIZE = 10;
 
@@ -19,7 +21,9 @@ const PAGE_SIZE = 10;
 export function UserListPage() {
   const [page, setPage] = useState(0);
   const currentUserId = useAuthStore((state) => state.user?.id);
-  const users = useUsers(page, PAGE_SIZE);
+  const [text, setText] = useState('');
+  const debounced = useDebouncedValue(text, 300);
+  const users = useUsers(page, PAGE_SIZE, debounced);
   const setActive = useSetUserActive();
 
   return (
@@ -35,11 +39,31 @@ export function UserListPage() {
       />
 
       <div className="space-y-4">
+        <div>
+          <label htmlFor="user-filter" className="mb-1 block text-sm font-medium text-slate-700">
+            Buscar usuario
+          </label>
+          <input
+            id="user-filter"
+            type="search"
+            placeholder="Nombre, correo o código/DNI"
+            className={`${INPUT_CLASSES} max-w-md`}
+            value={text}
+            onChange={(event) => {
+              setText(event.target.value);
+              setPage(0);
+            }}
+          />
+        </div>
         {users.isError && <Alert variant="error">{getErrorMessage(users.error)}</Alert>}
         {setActive.isError && <Alert variant="error">{getErrorMessage(setActive.error)}</Alert>}
         {users.isLoading && <LoadingState message="Cargando usuarios..." />}
         {users.data && users.data.content.length === 0 && (
-          <EmptyState message="No hay usuarios registrados." />
+          <EmptyState
+            message={
+              debounced.trim() ? 'No se encontraron usuarios.' : 'No hay usuarios registrados.'
+            }
+          />
         )}
         {users.data && users.data.content.length > 0 && (
           <Card className="overflow-hidden">

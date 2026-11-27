@@ -1,9 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getUser, getUsers, lookupUsers } from '@/features/users/api/usersApi';
 
-/** Consulta una página de usuarios (pantalla de gestión, solo ADMIN). */
-export function useUsers(page: number, size: number) {
-  return useQuery({ queryKey: ['users', { page, size }], queryFn: () => getUsers(page, size) });
+/** Consulta una página de usuarios (pantalla de gestión, solo ADMIN), con filtro opcional por texto. */
+export function useUsers(page: number, size: number, text = '') {
+  return useQuery({
+    queryKey: ['users', { page, size, text }],
+    queryFn: () => getUsers(page, size, text),
+    placeholderData: keepPreviousData,
+  });
 }
 
 /** Consulta un usuario por id; se desactiva si no hay id (formulario de alta). */

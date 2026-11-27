@@ -39,6 +39,39 @@ describe('UserListPage', () => {
     expect(screen.getByText('u3@epcc.unsa.edu.pe')).toBeInTheDocument();
   });
 
+  it('filtra la lista con la barra de búsqueda', async () => {
+    const texts: Array<string | null> = [];
+    server.use(
+      http.get(`${API}/users`, ({ request }) => {
+        const text = new URL(request.url).searchParams.get('text');
+        texts.push(text);
+        return HttpResponse.json(page(text ? [user(7)] : [user(2), user(3)]));
+      }),
+    );
+    renderWithProviders(<UserListPage />);
+    expect(await screen.findByText('Nombre2 Apellido2')).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText('Buscar usuario'), 'apellido7');
+
+    expect(await screen.findByText('Nombre7 Apellido7')).toBeInTheDocument();
+    expect(screen.queryByText('Nombre2 Apellido2')).not.toBeInTheDocument();
+    expect(texts).toContain('apellido7');
+  });
+
+  it('avisa cuando la búsqueda no encuentra a nadie', async () => {
+    server.use(
+      http.get(`${API}/users`, ({ request }) =>
+        HttpResponse.json(page(new URL(request.url).searchParams.get('text') ? [] : [user(2)])),
+      ),
+    );
+    renderWithProviders(<UserListPage />);
+    await screen.findByText('Nombre2 Apellido2');
+
+    await userEvent.type(screen.getByLabelText('Buscar usuario'), 'zzz');
+
+    expect(await screen.findByText('No se encontraron usuarios.')).toBeInTheDocument();
+  });
+
   it('muestra un mensaje cuando no hay usuarios', async () => {
     server.use(http.get(`${API}/users`, () => HttpResponse.json(page([]))));
     renderWithProviders(<UserListPage />);

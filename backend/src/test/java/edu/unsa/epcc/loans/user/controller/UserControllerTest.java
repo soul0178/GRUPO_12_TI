@@ -57,6 +57,24 @@ class UserControllerTest extends IntegrationTestBase {
     }
 
     @Test
+    void shouldFilterUsersByTextWhenAdminSearches() throws Exception {
+        String bearer = users.bearerFor(users.create(Role.ADMIN));
+        String id = UUID.randomUUID().toString().substring(0, 8);
+        String email = "busqueda." + id + "@epcc.unsa.edu.pe";
+        mockMvc.perform(post("/api/users").header("Authorization", bearer).contentType(APPLICATION_JSON)
+                        .content(createBody(email, id)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/users").param("text", id.toUpperCase()).header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].email").value(email));
+        mockMvc.perform(get("/api/users").param("text", "no-existe-" + id).header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void shouldCreateUserAndLetThemLoginWhenAdminCreatesIt() throws Exception {
         String bearer = users.bearerFor(users.create(Role.ADMIN));
         String id = UUID.randomUUID().toString().substring(0, 8);

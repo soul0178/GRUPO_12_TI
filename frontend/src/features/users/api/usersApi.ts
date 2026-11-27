@@ -9,9 +9,11 @@ import type {
 import { apiClient } from '@/shared/api/apiClient';
 import type { Page } from '@/shared/types/api';
 
-/** Llama a GET /users (solo ADMIN). */
-export async function getUsers(page: number, size: number): Promise<Page<User>> {
-  const { data } = await apiClient.get<Page<User>>('/users', { params: { page, size } });
+/** Llama a GET /users (solo ADMIN); `text` filtra por nombre, correo o código/DNI. */
+export async function getUsers(page: number, size: number, text = ''): Promise<Page<User>> {
+  const { data } = await apiClient.get<Page<User>>('/users', {
+    params: { page, size, text: text.trim() || undefined },
+  });
   return data;
 }
 

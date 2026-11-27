@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { CategoriesPage } from '@/features/inventory/pages/CategoriesPage';
+import { CategoriesSection } from '@/features/inventory/components/CategoriesSection';
 import { server } from '@/test/mocks/server';
 import { loginAs, renderWithProviders } from '@/test/renderWithProviders';
 
@@ -12,14 +12,14 @@ const categories = [
   { id: 2, name: 'Libro', maxLoanHours: 72, requiresGuarantee: false },
 ];
 
-describe('CategoriesPage', () => {
+describe('CategoriesSection', () => {
   beforeEach(() => {
     loginAs('ADMIN');
     server.use(http.get(`${API}/categories`, () => HttpResponse.json(categories)));
   });
 
   it('muestra las categorías con su plazo en horas y días', async () => {
-    renderWithProviders(<CategoriesPage />);
+    renderWithProviders(<CategoriesSection />);
 
     expect(await screen.findByLabelText('Plazo máximo en horas de Libro')).toHaveValue(72);
     expect(screen.getByText('72 horas (3 días)')).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe('CategoriesPage', () => {
         return HttpResponse.json({ ...categories[1], maxLoanHours: 48, requiresGuarantee: true });
       }),
     );
-    renderWithProviders(<CategoriesPage />);
+    renderWithProviders(<CategoriesSection />);
     const hours = await screen.findByLabelText('Plazo máximo en horas de Libro');
 
     await userEvent.clear(hours);
@@ -47,7 +47,7 @@ describe('CategoriesPage', () => {
   });
 
   it('valida que el plazo sea de al menos 1 hora', async () => {
-    renderWithProviders(<CategoriesPage />);
+    renderWithProviders(<CategoriesSection />);
     const hours = await screen.findByLabelText('Plazo máximo en horas de Equipo');
 
     await userEvent.clear(hours);

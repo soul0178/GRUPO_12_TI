@@ -41,7 +41,7 @@ describe('rutas de la aplicación', () => {
     expect(within(navigation).getByRole('link', { name: 'Mi perfil' })).toBeInTheDocument();
   });
 
-  it('muestra Catálogo a todos y Categorías solo al administrador', () => {
+  it('muestra Catálogo a todos y no hay un enlace de Categorías (van dentro de Políticas)', () => {
     loginAs('MANAGER');
 
     renderRoutes(routes, '/');

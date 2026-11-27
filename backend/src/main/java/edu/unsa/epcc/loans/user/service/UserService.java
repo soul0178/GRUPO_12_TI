@@ -55,10 +55,14 @@ public class UserService {
         return userMapper.toResponse(saved);
     }
 
-    /** Lista los usuarios de forma paginada. */
+    /** Lista los usuarios de forma paginada; con texto, solo los que coinciden por nombre, correo o código/DNI. */
     @Transactional(readOnly = true)
-    public PageResponse<UserResponse> findAll(Pageable pageable) {
-        return PageResponse.from(userRepository.findAll(pageable).map(userMapper::toResponse));
+    public PageResponse<UserResponse> findAll(String text, Pageable pageable) {
+        if (text == null || text.isBlank()) {
+            return PageResponse.from(userRepository.findAll(pageable).map(userMapper::toResponse));
+        }
+        String pattern = "%" + text.trim().toLowerCase(Locale.ROOT) + "%";
+        return PageResponse.from(userRepository.searchPage(pattern, pageable).map(userMapper::toResponse));
     }
 
     /** Devuelve un usuario por id. Lanza NotFoundException si no existe. */

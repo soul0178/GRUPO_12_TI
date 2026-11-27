@@ -7,10 +7,9 @@ import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
 import { Card } from '@/shared/components/Card';
 import { LoadingState } from '@/shared/components/LoadingState';
-import { PageHeader } from '@/shared/components/PageHeader';
 
-/** Pantalla donde el ADMIN edita el plazo máximo de préstamo y la garantía de cada categoría (RF-03). */
-export function CategoriesPage() {
+/** Sección donde el ADMIN edita el plazo máximo de préstamo y la garantía de cada categoría (RF-03). */
+export function CategoriesSection() {
   const categories = useCategories();
   const updateCategory = useUpdateCategory();
   const [savedName, setSavedName] = useState<string | null>(null);
@@ -24,11 +23,15 @@ export function CategoriesPage() {
   }
 
   return (
-    <section className="mx-auto max-w-4xl">
-      <PageHeader
-        title="Categorías"
-        description="Plazo máximo de préstamo y requisito de garantía de cada categoría."
-      />
+    <section aria-labelledby="categories-heading" className="space-y-4">
+      <div>
+        <h2 id="categories-heading" className="text-lg font-semibold text-slate-900">
+          Categorías
+        </h2>
+        <p className="text-sm text-slate-500">
+          Plazo máximo de préstamo y requisito de garantía de cada categoría.
+        </p>
+      </div>
       <div className="space-y-4">
         {categories.isLoading && <LoadingState message="Cargando categorías..." />}
         {categories.isError && <Alert variant="error">{getErrorMessage(categories.error)}</Alert>}

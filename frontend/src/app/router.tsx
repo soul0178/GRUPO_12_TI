@@ -6,7 +6,6 @@ import { NotFoundPage } from '@/app/pages/NotFoundPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { CatalogPage } from '@/features/inventory/pages/CatalogPage';
-import { CategoriesPage } from '@/features/inventory/pages/CategoriesPage';
 import { ItemFormPage } from '@/features/inventory/pages/ItemFormPage';
 import { LoanListPage } from '@/features/loans/pages/LoanListPage';
 import { NewLoanPage } from '@/features/loans/pages/NewLoanPage';
@@ -70,7 +69,7 @@ export const routes: RouteObject[] = [
       {
         element: <AppLayout />,
         children: [
-          { path: '/categories', element: <CategoriesPage /> },
+          { path: '/categories', element: <Navigate to="/settings" replace /> },
           { path: '/settings', element: <PolicySettingsPage /> },
           { path: '/users', element: <UserListPage /> },
           { path: '/users/new', element: <UserFormPage /> },

@@ -21,7 +21,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Préstamos', to: '/loans', roles: ['MANAGER', 'ADMIN'] },
   { label: 'Sanciones', to: '/sanctions', roles: ['MANAGER', 'ADMIN'] },
   { label: 'Reportes', to: '/reports', roles: ['MANAGER', 'ADMIN'], end: false },
-  { label: 'Categorías', to: '/categories', roles: ['ADMIN'] },
   { label: 'Políticas', to: '/settings', roles: ['ADMIN'] },
   { label: 'Usuarios', to: '/users', roles: ['ADMIN'] },
 ];

@@ -1,3 +1,4 @@
+import { CategoriesSection } from '@/features/inventory/components/CategoriesSection';
 import { PolicySettingsForm } from '@/features/sanctions/components/PolicySettingsForm';
 import {
   usePolicySettings,
@@ -15,11 +16,12 @@ export function PolicySettingsPage() {
   const update = useUpdatePolicySettings();
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="mx-auto max-w-4xl">
       <PageHeader
         title="Políticas"
-        description="Parámetros generales de préstamos y reservas. Los plazos por categoría se editan en Categorías."
+        description="Parámetros generales de préstamos y reservas, y plazos por categoría."
       />
+      <h2 className="mb-3 text-lg font-semibold text-slate-900">Parámetros generales</h2>
       {settings.isLoading && <LoadingState message="Cargando políticas..." />}
       {settings.isError && <Alert variant="error">{getErrorMessage(settings.error)}</Alert>}
       {settings.data && (
@@ -33,6 +35,9 @@ export function PolicySettingsPage() {
           />
         </Card>
       )}
+      <div className="mt-8">
+        <CategoriesSection />
+      </div>
     </section>
   );
 }

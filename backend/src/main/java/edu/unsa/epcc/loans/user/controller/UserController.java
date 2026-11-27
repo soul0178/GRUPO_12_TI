@@ -35,11 +35,12 @@ public class UserController {
 
     private final UserService userService;
 
-    /** Lista los usuarios paginados, ordenados por apellidos. */
+    /** Lista los usuarios paginados, ordenados por apellidos; el parámetro opcional text filtra por nombre, correo o código/DNI. */
     @GetMapping
     public PageResponse<UserResponse> findAll(
+            @RequestParam(required = false) String text,
             @PageableDefault(size = 20, sort = "lastName", direction = Sort.Direction.ASC) Pageable pageable) {
-        return userService.findAll(pageable);
+        return userService.findAll(text, pageable);
     }
 
     /** Busca usuarios por nombre, correo o código/DNI con datos mínimos; también para el encargado (MANAGER). */

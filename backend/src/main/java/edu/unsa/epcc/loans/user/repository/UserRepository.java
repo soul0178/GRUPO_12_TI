@@ -3,6 +3,7 @@ package edu.unsa.epcc.loans.user.repository;
 import edu.unsa.epcc.loans.user.entity.User;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +29,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
                or lower(u.documentNumber) like :pattern
             """)
     List<User> search(@Param("pattern") String pattern, Pageable pageable);
+
+    /** Igual que {@link #search} pero paginado, para la pantalla de gestión de usuarios. */
+    @Query(value = """
+            select u from User u
+            where lower(concat(u.firstName, ' ', u.lastName)) like :pattern
+               or lower(u.email) like :pattern
+               or lower(u.documentNumber) like :pattern
+            """,
+            countQuery = """
+            select count(u) from User u
+            where lower(concat(u.firstName, ' ', u.lastName)) like :pattern
+               or lower(u.email) like :pattern
+               or lower(u.documentNumber) like :pattern
+            """)
+    Page<User> searchPage(@Param("pattern") String pattern, Pageable pageable);
 }

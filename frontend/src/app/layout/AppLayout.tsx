@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import logo from '@/assets/logo-epcc.png';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import type { Role } from '@/features/auth/types/auth';
 import { ROLE_LABELS } from '@/features/users/types/user';
@@ -46,9 +47,7 @@ export function AppLayout() {
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-3">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
-              EP
-            </span>
+            <img src={logo} alt="Logotipo de la EPCC" className="h-10 w-auto" />
             <span className="text-base font-semibold text-slate-900">Préstamos EPCC</span>
           </div>
 
@@ -61,7 +60,7 @@ export function AppLayout() {
                 className={({ isActive }) =>
                   `rounded-lg px-2 py-2 text-sm font-medium transition ${
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700'
+                      ? 'bg-primary-50 text-primary-700 ring-1 ring-inset ring-accent-500'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`
                 }
@@ -74,7 +73,7 @@ export function AppLayout() {
           <div className="flex items-center gap-3">
             <span
               aria-hidden="true"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700"
             >
               {initials}
             </span>

@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Navigate } from 'react-router-dom';
 import { z } from 'zod';
+import logo from '@/assets/logo-epcc.png';
 import { useLogin } from '@/features/auth/hooks/useLogin';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { getErrorMessage } from '@/shared/api/getErrorMessage';
@@ -32,16 +33,14 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 px-4">
+    <main className="flex min-h-screen items-center justify-center border-t-8 border-primary-700 bg-slate-50 px-4">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center text-white">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl font-bold ring-1 ring-white/30">
-            EP
-          </span>
-          <p className="mt-4 text-sm font-medium text-indigo-100">
+        <div className="mb-8 text-center">
+          <img src={logo} alt="Logotipo de la EPCC" className="mx-auto h-24 w-auto" />
+          <p className="mt-4 text-sm font-semibold text-primary-700">
             Escuela Profesional de Ciencia de la Computación
           </p>
-          <p className="text-xs text-indigo-200">Universidad Nacional de San Agustín</p>
+          <p className="text-xs text-slate-500">Universidad Nacional de San Agustín</p>
         </div>
         <Card className="p-8">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Iniciar sesión</h1>

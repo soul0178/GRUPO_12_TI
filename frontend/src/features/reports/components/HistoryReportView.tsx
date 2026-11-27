@@ -55,7 +55,7 @@ export function HistoryReportView({
             </div>
             <Link
               to={changeLink.to}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              className="text-sm font-medium text-primary-600 hover:text-primary-700"
             >
               {changeLink.label}
             </Link>

@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { useId } from 'react';
 
 export const INPUT_CLASSES =
-  'block w-full rounded-lg border-0 px-3 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 aria-[invalid=true]:ring-red-400';
+  'block w-full rounded-lg border-0 px-3 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 aria-[invalid=true]:ring-red-400';
 
 interface FormFieldProps extends ComponentProps<'input'> {
   label: string;

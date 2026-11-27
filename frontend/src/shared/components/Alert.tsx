@@ -6,7 +6,7 @@ interface AlertProps {
 const STYLES = {
   error: 'bg-red-50 text-red-800 ring-red-200',
   success: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-  info: 'bg-indigo-50 text-indigo-800 ring-indigo-200',
+  info: 'bg-primary-50 text-primary-800 ring-primary-200',
 };
 
 /** Aviso de error (role="alert"), de éxito o informativo (role="status") con un mensaje en español. */

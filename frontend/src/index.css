@@ -1,7 +1,69 @@
 @import 'tailwindcss';
+@import '@fontsource/titillium-web/400.css';
+@import '@fontsource/titillium-web/600.css';
+@import '@fontsource/titillium-web/700.css';
 
+/*
+ * Paleta del sistema (tomada del logotipo de la EPCC):
+ *  - primary (azul marino #033B80): botones, menú activo y enfoque.
+ *  - accent (verde limón #A0E300): detalles, etiquetas de rol y acentos (siempre con texto oscuro).
+ *  - amber (naranja #FFB752): avisos, vencimientos y alertas.
+ *  - emerald (verde): éxito. slate (gris #909090): textos, bordes y fondos neutros.
+ */
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    'Titillium Web', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-primary-50: #eef3fb;
+  --color-primary-100: #d9e5f6;
+  --color-primary-200: #b4cbed;
+  --color-primary-300: #84a8de;
+  --color-primary-400: #4f7ec8;
+  --color-primary-500: #1f5aa8;
+  --color-primary-600: #0b4a94;
+  --color-primary-700: #033b80;
+  --color-primary-800: #022f66;
+  --color-primary-900: #02244d;
+
+  --color-accent-50: #f6fde6;
+  --color-accent-100: #eafbc1;
+  --color-accent-200: #d8f58b;
+  --color-accent-300: #c3ee4f;
+  --color-accent-400: #b1e91f;
+  --color-accent-500: #a0e300;
+  --color-accent-600: #84bd00;
+  --color-accent-700: #557c00;
+  --color-accent-800: #3f5f00;
+  --color-accent-900: #2f4600;
+
+  --color-amber-50: #fff7ea;
+  --color-amber-100: #ffecce;
+  --color-amber-200: #ffdca3;
+  --color-amber-300: #ffc977;
+  --color-amber-400: #ffb752;
+  --color-amber-500: #f59f2b;
+  --color-amber-600: #d9830f;
+  --color-amber-700: #a8650a;
+  --color-amber-800: #7f4c08;
+  --color-amber-900: #5e3806;
+
+  --color-emerald-50: #f1f9ea;
+  --color-emerald-100: #ddf0cc;
+  --color-emerald-200: #bde39d;
+  --color-emerald-600: #4a7f12;
+  --color-emerald-700: #3d6a0e;
+  --color-emerald-800: #30530b;
+
+  --color-slate-50: #f6f7f8;
+  --color-slate-100: #eceeef;
+  --color-slate-200: #dcdfe1;
+  --color-slate-300: #c3c7ca;
+  --color-slate-400: #9a9fa3;
+  --color-slate-500: #6e7478;
+  --color-slate-600: #565b5f;
+  --color-slate-700: #42464a;
+  --color-slate-800: #2f3235;
+  --color-slate-900: #1c1e20;
 }
 
 @layer base {

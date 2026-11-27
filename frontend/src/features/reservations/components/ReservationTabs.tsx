@@ -3,7 +3,7 @@ import { useAuthStore } from '@/features/auth/store/authStore';
 
 const TAB_CLASSES = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-    isActive ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+    isActive ? 'bg-primary-600 text-white' : 'text-slate-600 hover:bg-slate-100'
   }`;
 
 /** Pestañas "Mis reservas" / "Todas las reservas"; solo las ve el personal (encargado y administrador). */

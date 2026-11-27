@@ -23,12 +23,12 @@ interface SanctionTableProps {
 const HEADER_CLASSES =
   'px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500';
 
-const STATUS_TONES: Record<SanctionStatus, 'amber' | 'red' | 'slate' | 'indigo'> = {
+const STATUS_TONES: Record<SanctionStatus, 'amber' | 'red' | 'slate' | 'primary'> = {
   SUGGESTED: 'amber',
   ACTIVE: 'red',
   FINISHED: 'slate',
   REJECTED: 'slate',
-  LIFTED: 'indigo',
+  LIFTED: 'primary',
 };
 
 /** Tabla de sanciones; el ADMIN resuelve las sugeridas y reduce o levanta las activas desde la misma fila. */

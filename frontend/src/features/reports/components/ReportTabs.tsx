@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 const TAB_CLASSES = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-    isActive ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+    isActive ? 'bg-primary-600 text-white' : 'text-slate-600 hover:bg-slate-100'
   }`;
 
 /** Alterna entre el historial por usuario y el historial por ítem. */

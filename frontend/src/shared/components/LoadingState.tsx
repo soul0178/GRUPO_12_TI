@@ -3,7 +3,7 @@ export function LoadingState({ message }: { message: string }) {
   return (
     <p className="flex items-center gap-3 py-10 text-sm text-slate-500">
       <svg
-        className="h-5 w-5 animate-spin text-indigo-600"
+        className="h-5 w-5 animate-spin text-primary-600"
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"

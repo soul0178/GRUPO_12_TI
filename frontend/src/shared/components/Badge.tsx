@@ -1,4 +1,4 @@
-type Tone = 'indigo' | 'green' | 'slate' | 'amber' | 'red';
+type Tone = 'primary' | 'accent' | 'green' | 'slate' | 'amber' | 'red';
 
 interface BadgeProps {
   tone?: Tone;
@@ -6,7 +6,8 @@ interface BadgeProps {
 }
 
 const TONES: Record<Tone, string> = {
-  indigo: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
+  primary: 'bg-primary-50 text-primary-700 ring-primary-600/20',
+  accent: 'bg-accent-50 text-accent-700 ring-accent-600/20',
   green: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   slate: 'bg-slate-100 text-slate-600 ring-slate-500/20',
   amber: 'bg-amber-50 text-amber-700 ring-amber-600/20',

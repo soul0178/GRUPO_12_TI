@@ -38,7 +38,7 @@ export function UserTable({ users, currentUserId, isUpdating, onToggleActive }: 
               <td className="px-4 py-3 text-slate-600">{user.email}</td>
               <td className="px-4 py-3 text-slate-600">{user.documentNumber}</td>
               <td className="px-4 py-3">
-                <Badge tone="indigo">{ROLE_LABELS[user.role]}</Badge>
+                <Badge tone="accent">{ROLE_LABELS[user.role]}</Badge>
               </td>
               <td className="px-4 py-3">
                 <Badge tone={user.active ? 'green' : 'slate'}>

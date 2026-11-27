@@ -20,19 +20,21 @@ public interface SanctionRepository extends JpaRepository<Sanction, Long> {
 
     /**
      * Lista sanciones con filtros opcionales (usuario y estado pueden ser null). {@code pattern} es un LIKE en
-     * minúsculas sobre nombre completo, correo o código/DNI del usuario; "%" no filtra.
+     * minúsculas sobre nombre completo, correo o código/DNI del usuario, o sobre el motivo (que nombra al ítem); "%" no filtra.
      */
     @EntityGraph(attributePaths = "user")
     @Query("""
             select s from Sanction s
             where (:userId is null or s.user.id = :userId)
               and (:status is null or s.status = :status)
+              and (:type is null or s.type = :type)
               and (lower(concat(s.user.firstName, ' ', s.user.lastName)) like :pattern
                    or lower(s.user.email) like :pattern
-                   or lower(s.user.documentNumber) like :pattern)
+                   or lower(s.user.documentNumber) like :pattern
+                   or lower(s.reason) like :pattern)
             """)
     Page<Sanction> search(@Param("userId") Long userId, @Param("status") SanctionStatus status,
-                          @Param("pattern") String pattern, Pageable pageable);
+                          @Param("type") SanctionType type, @Param("pattern") String pattern, Pageable pageable);
 
     /** Sanciones del usuario con alguno de los estados indicados iniciadas desde {@code since} (reincidencia). */
     @Query("""

@@ -1,5 +1,6 @@
 package edu.unsa.epcc.loans.user.repository;
 
+import edu.unsa.epcc.loans.user.entity.Role;
 import edu.unsa.epcc.loans.user.entity.User;
 import java.util.List;
 import java.util.Optional;
@@ -33,15 +34,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** Igual que {@link #search} pero paginado, para la pantalla de gestión de usuarios. */
     @Query(value = """
             select u from User u
-            where lower(concat(u.firstName, ' ', u.lastName)) like :pattern
+            where (lower(concat(u.firstName, ' ', u.lastName)) like :pattern
                or lower(u.email) like :pattern
-               or lower(u.documentNumber) like :pattern
+               or lower(u.documentNumber) like :pattern)
+              and (:role is null or u.role = :role)
             """,
             countQuery = """
             select count(u) from User u
-            where lower(concat(u.firstName, ' ', u.lastName)) like :pattern
+            where (lower(concat(u.firstName, ' ', u.lastName)) like :pattern
                or lower(u.email) like :pattern
-               or lower(u.documentNumber) like :pattern
+               or lower(u.documentNumber) like :pattern)
+              and (:role is null or u.role = :role)
             """)
-    Page<User> searchPage(@Param("pattern") String pattern, Pageable pageable);
+    Page<User> searchPage(@Param("pattern") String pattern, @Param("role") Role role, Pageable pageable);
 }

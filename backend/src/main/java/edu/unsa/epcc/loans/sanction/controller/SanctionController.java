@@ -7,6 +7,7 @@ import edu.unsa.epcc.loans.sanction.dto.LiftSanctionRequest;
 import edu.unsa.epcc.loans.sanction.dto.ReduceSanctionRequest;
 import edu.unsa.epcc.loans.sanction.dto.SanctionResponse;
 import edu.unsa.epcc.loans.sanction.entity.SanctionStatus;
+import edu.unsa.epcc.loans.sanction.entity.SanctionType;
 import edu.unsa.epcc.loans.sanction.service.SanctionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +37,10 @@ public class SanctionController {
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public PageResponse<SanctionResponse> findAll(
             @RequestParam(required = false) SanctionStatus status,
+            @RequestParam(required = false) SanctionType type,
             @RequestParam(required = false) String text,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return sanctionService.findAll(status, text, pageable);
+        return sanctionService.findAll(status, type, text, pageable);
     }
 
     /** Lista las sanciones del usuario autenticado, con filtro opcional de estado. */

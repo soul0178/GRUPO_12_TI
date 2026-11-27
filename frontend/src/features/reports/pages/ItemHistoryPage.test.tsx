@@ -16,6 +16,44 @@ function renderAt(path: string) {
 const itemSubject = { id: 5, name: 'EQ-001 · Laptop', detail: 'Equipo' };
 
 describe('ItemHistoryPage', () => {
+  it('permite listar solo los ítems dañados o dados de baja', async () => {
+    const statuses: (string | null)[] = [];
+    const category = { id: 1, name: 'Equipo', maxLoanHours: 4, requiresGuarantee: true };
+    server.use(
+      http.get(`${API}/items`, ({ request }) => {
+        const status = new URL(request.url).searchParams.get('status');
+        statuses.push(status);
+        return HttpResponse.json(
+          pageOf(
+            status === 'OUT_OF_SERVICE'
+              ? [
+                  {
+                    id: 3,
+                    code: 'EQ-003',
+                    name: 'Proyector',
+                    description: null,
+                    category,
+                    status: 'OUT_OF_SERVICE',
+                    createdAt: '2026-03-01T00:00:00Z',
+                  },
+                ]
+              : [],
+          ),
+        );
+      }),
+    );
+    loginAs('MANAGER');
+    renderAt('/reports/items');
+
+    await userEvent.selectOptions(
+      await screen.findByLabelText('Estado del ítem'),
+      'OUT_OF_SERVICE',
+    );
+
+    expect(await screen.findByText('EQ-003 · Proyector')).toBeInTheDocument();
+    expect(statuses).toContain('OUT_OF_SERVICE');
+  });
+
   it('muestra desde el inicio todos los ítems (equipos, libros y objetos), no solo los primeros', async () => {
     const sizes: (string | null)[] = [];
     const category = (id: number, name: string) => ({

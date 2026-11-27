@@ -199,10 +199,10 @@ public class SanctionService {
 
     /** Lista sanciones paginadas con filtro opcional de estado y de usuario (nombre, correo o código/DNI). */
     @Transactional
-    public PageResponse<SanctionResponse> findAll(SanctionStatus status, String text, Pageable pageable) {
+    public PageResponse<SanctionResponse> findAll(SanctionStatus status, SanctionType type, String text, Pageable pageable) {
         finishExpiredSanctions();
         String pattern = text == null || text.isBlank() ? "%" : "%" + text.trim().toLowerCase(Locale.ROOT) + "%";
-        return PageResponse.from(sanctionRepository.search(null, status, pattern, pageable)
+        return PageResponse.from(sanctionRepository.search(null, status, type, pattern, pageable)
                 .map(sanctionMapper::toResponse));
     }
 
@@ -210,7 +210,7 @@ public class SanctionService {
     @Transactional
     public PageResponse<SanctionResponse> findByUser(Long userId, SanctionStatus status, Pageable pageable) {
         finishExpiredSanctions();
-        return PageResponse.from(sanctionRepository.search(userId, status, "%", pageable).map(sanctionMapper::toResponse));
+        return PageResponse.from(sanctionRepository.search(userId, status, null, "%", pageable).map(sanctionMapper::toResponse));
     }
 
     private Sanction newSanction(Long userId, SanctionType type) {

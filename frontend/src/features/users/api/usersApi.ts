@@ -1,3 +1,4 @@
+import type { Role } from '@/features/auth/types/auth';
 import type {
   ChangePasswordRequest,
   CreateUserRequest,
@@ -9,10 +10,15 @@ import type {
 import { apiClient } from '@/shared/api/apiClient';
 import type { Page } from '@/shared/types/api';
 
-/** Llama a GET /users (solo ADMIN); `text` filtra por nombre, correo o código/DNI. */
-export async function getUsers(page: number, size: number, text = ''): Promise<Page<User>> {
+/** Llama a GET /users (solo ADMIN); `text` filtra por nombre, correo o código/DNI y `role` por rol. */
+export async function getUsers(
+  page: number,
+  size: number,
+  text = '',
+  role?: Role,
+): Promise<Page<User>> {
   const { data } = await apiClient.get<Page<User>>('/users', {
-    params: { page, size, text: text.trim() || undefined },
+    params: { page, size, text: text.trim() || undefined, role },
   });
   return data;
 }

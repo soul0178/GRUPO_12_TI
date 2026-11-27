@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { Role } from '@/features/auth/types/auth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { UserTable } from '@/features/users/components/UserTable';
 import { useSetUserActive } from '@/features/users/hooks/useUserMutations';
 import { useUsers } from '@/features/users/hooks/useUsers';
+import { ROLES, ROLE_LABELS } from '@/features/users/types/user';
 import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
 import { Card } from '@/shared/components/Card';
@@ -24,7 +26,8 @@ export function UserListPage() {
   const currentUserId = useAuthStore((state) => state.user?.id);
   const [text, setText] = useState('');
   const debounced = useDebouncedValue(text, 300);
-  const users = useUsers(page, PAGE_SIZE, debounced);
+  const [role, setRole] = useState<Role | ''>('');
+  const users = useUsers(page, PAGE_SIZE, debounced, role || undefined);
   const setActive = useSetUserActive();
 
   return (
@@ -61,6 +64,27 @@ export function UserListPage() {
                 }}
               />
             </div>
+            <div>
+              <label htmlFor="user-role" className="mb-1 block text-sm font-medium text-slate-700">
+                Rol
+              </label>
+              <select
+                id="user-role"
+                className={INPUT_CLASSES}
+                value={role}
+                onChange={(event) => {
+                  setRole(event.target.value as Role | '');
+                  setPage(0);
+                }}
+              >
+                <option value="">Todos</option>
+                {ROLES.map((value) => (
+                  <option key={value} value={value}>
+                    {ROLE_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </>
         }
       >
@@ -70,7 +94,9 @@ export function UserListPage() {
         {users.data && users.data.content.length === 0 && (
           <EmptyState
             message={
-              debounced.trim() ? 'No se encontraron usuarios.' : 'No hay usuarios registrados.'
+              debounced.trim() || role
+                ? 'No se encontraron usuarios.'
+                : 'No hay usuarios registrados.'
             }
           />
         )}

@@ -1,11 +1,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import type { Role } from '@/features/auth/types/auth';
 import { getUser, getUsers, lookupUsers } from '@/features/users/api/usersApi';
 
-/** Consulta una página de usuarios (pantalla de gestión, solo ADMIN), con filtro opcional por texto. */
-export function useUsers(page: number, size: number, text = '') {
+/** Consulta una página de usuarios (pantalla de gestión, solo ADMIN), con filtros opcionales por texto y rol. */
+export function useUsers(page: number, size: number, text = '', role?: Role) {
   return useQuery({
-    queryKey: ['users', { page, size, text }],
-    queryFn: () => getUsers(page, size, text),
+    queryKey: ['users', { page, size, text, role }],
+    queryFn: () => getUsers(page, size, text, role),
     placeholderData: keepPreviousData,
   });
 }

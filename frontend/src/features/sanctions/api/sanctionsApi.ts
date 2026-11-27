@@ -3,6 +3,7 @@ import type {
   PolicySettings,
   Sanction,
   SanctionStatus,
+  SanctionType,
 } from '@/features/sanctions/types/sanction';
 import { apiClient } from '@/shared/api/apiClient';
 import type { Page } from '@/shared/types/api';
@@ -13,9 +14,10 @@ export async function getSanctions(
   page: number,
   size: number,
   text = '',
+  type?: SanctionType,
 ): Promise<Page<Sanction>> {
   const { data } = await apiClient.get<Page<Sanction>>('/sanctions', {
-    params: { status, page, size, text: text.trim() || undefined },
+    params: { status, page, size, text: text.trim() || undefined, type },
   });
   return data;
 }

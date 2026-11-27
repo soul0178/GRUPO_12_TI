@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useItems } from '@/features/inventory/hooks/useItems';
-import type { Item } from '@/features/inventory/types/inventory';
+import { ITEM_STATUS_LABELS } from '@/features/inventory/types/inventory';
+import type { Item, ItemStatus } from '@/features/inventory/types/inventory';
 import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
 import { Badge } from '@/shared/components/Badge';
@@ -12,11 +13,20 @@ import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 const AVAILABLE_RESULTS_SIZE = 100;
 const ALL_RESULTS_SIZE = 100;
 
+const STATUS_TONES: Record<ItemStatus, 'green' | 'primary' | 'amber' | 'red'> = {
+  AVAILABLE: 'green',
+  ON_LOAN: 'primary',
+  OUT_OF_SERVICE: 'amber',
+  RETIRED: 'red',
+};
+
 interface ItemPickerProps {
   selected: Item | null;
   onSelect: (item: Item | null) => void;
   /** Si es false, lista todos los ítems sin importar su estado, desde el inicio (reportes). Por defecto, solo disponibles. */
   availableOnly?: boolean;
+  /** Con availableOnly en false, limita la lista a ítems con este estado (p. ej. dañados o dados de baja). */
+  status?: ItemStatus;
   /** Si es true, el ítem no se puede cambiar (entrega de una reserva). */
   locked?: boolean;
 }
@@ -26,12 +36,13 @@ export function ItemPicker({
   selected,
   onSelect,
   availableOnly = true,
+  status,
   locked = false,
 }: ItemPickerProps) {
   const [text, setText] = useState('');
   const debounced = useDebouncedValue(text, 300);
   const items = useItems(
-    { text: debounced, status: availableOnly ? 'AVAILABLE' : undefined },
+    { text: debounced, status: availableOnly ? 'AVAILABLE' : status },
     0,
     availableOnly ? AVAILABLE_RESULTS_SIZE : ALL_RESULTS_SIZE,
   );
@@ -103,7 +114,11 @@ export function ItemPicker({
                   </span>
                   <span className="block text-xs text-slate-500">{item.category.name}</span>
                 </span>
-                {item.category.requiresGuarantee && <Badge tone="amber">Exige garantía</Badge>}
+                {availableOnly ? (
+                  item.category.requiresGuarantee && <Badge tone="amber">Exige garantía</Badge>
+                ) : (
+                  <Badge tone={STATUS_TONES[item.status]}>{ITEM_STATUS_LABELS[item.status]}</Badge>
+                )}
               </button>
             </li>
           ))}

@@ -75,6 +75,21 @@ class UserControllerTest extends IntegrationTestBase {
     }
 
     @Test
+    void shouldFilterUsersByRoleWhenAdminSearches() throws Exception {
+        String bearer = users.bearerFor(users.create(Role.ADMIN));
+        User teacher = users.create(Role.TEACHER);
+
+        mockMvc.perform(get("/api/users").param("role", "TEACHER").param("text", teacher.getEmail())
+                        .header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].role").value("TEACHER"));
+        mockMvc.perform(get("/api/users").param("role", "STUDENT").param("text", teacher.getEmail())
+                        .header("Authorization", bearer))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void shouldCreateUserAndLetThemLoginWhenAdminCreatesIt() throws Exception {
         String bearer = users.bearerFor(users.create(Role.ADMIN));
         String id = UUID.randomUUID().toString().substring(0, 8);

@@ -54,6 +54,20 @@ class SanctionControllerTest extends IntegrationTestBase {
     }
 
     @Test
+    void shouldFilterSanctionsByType() throws Exception {
+        User target = users.create(Role.STUDENT);
+        suggestedFor(target);
+
+        mockMvc.perform(get("/api/sanctions").param("type", "DAMAGE").param("text", target.getEmail())
+                        .header("Authorization", bearer(Role.MANAGER)))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].type").value("DAMAGE"));
+        mockMvc.perform(get("/api/sanctions").param("type", "LOSS").param("text", target.getEmail())
+                        .header("Authorization", bearer(Role.MANAGER)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void shouldFilterSanctionsByUserText() throws Exception {
         User target = users.create(Role.STUDENT);
         suggestedFor(target);

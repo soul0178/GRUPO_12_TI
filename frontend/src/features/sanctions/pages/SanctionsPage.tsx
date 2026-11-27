@@ -8,8 +8,13 @@ import {
   useRejectSanction,
 } from '@/features/sanctions/hooks/useSanctionMutations';
 import { useSanctions } from '@/features/sanctions/hooks/useSanctions';
-import { SANCTION_STATUSES, SANCTION_STATUS_LABELS } from '@/features/sanctions/types/sanction';
-import type { SanctionStatus } from '@/features/sanctions/types/sanction';
+import {
+  SANCTION_STATUSES,
+  SANCTION_STATUS_LABELS,
+  SANCTION_TYPES,
+  SANCTION_TYPE_LABELS,
+} from '@/features/sanctions/types/sanction';
+import type { SanctionStatus, SanctionType } from '@/features/sanctions/types/sanction';
 import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
 import { Card } from '@/shared/components/Card';
@@ -30,7 +35,14 @@ export function SanctionsPage() {
   const [page, setPage] = useState(0);
   const [text, setText] = useState('');
   const debounced = useDebouncedValue(text, 300);
-  const sanctions = useSanctions(status || undefined, page, PAGE_SIZE, debounced);
+  const [type, setType] = useState<SanctionType | ''>('');
+  const sanctions = useSanctions(
+    status || undefined,
+    page,
+    PAGE_SIZE,
+    debounced,
+    type || undefined,
+  );
   const confirm = useConfirmSanction();
   const reject = useRejectSanction();
   const lift = useLiftSanction();
@@ -52,12 +64,12 @@ export function SanctionsPage() {
                 htmlFor="sanction-user"
                 className="mb-1.5 block text-sm font-medium text-slate-700"
               >
-                Buscar usuario
+                Buscar usuario o ítem
               </label>
               <input
                 id="sanction-user"
                 type="search"
-                placeholder="Nombre, correo o código/DNI"
+                placeholder="Nombre, correo, DNI o código de ítem"
                 className={INPUT_CLASSES}
                 value={text}
                 onChange={(event) => {
@@ -86,6 +98,30 @@ export function SanctionsPage() {
                 {SANCTION_STATUSES.map((value) => (
                   <option key={value} value={value}>
                     {SANCTION_STATUS_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="sanction-type"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Tipo
+              </label>
+              <select
+                id="sanction-type"
+                className={INPUT_CLASSES}
+                value={type}
+                onChange={(event) => {
+                  setType(event.target.value as SanctionType | '');
+                  setPage(0);
+                }}
+              >
+                <option value="">Todos</option>
+                {SANCTION_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {SANCTION_TYPE_LABELS[value]}
                   </option>
                 ))}
               </select>

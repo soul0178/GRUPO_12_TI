@@ -6,6 +6,7 @@ import edu.unsa.epcc.loans.user.dto.CreateUserRequest;
 import edu.unsa.epcc.loans.user.dto.UpdateUserRequest;
 import edu.unsa.epcc.loans.user.dto.UserResponse;
 import edu.unsa.epcc.loans.user.dto.UserSummaryResponse;
+import edu.unsa.epcc.loans.user.entity.Role;
 import edu.unsa.epcc.loans.user.service.UserService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -35,12 +36,13 @@ public class UserController {
 
     private final UserService userService;
 
-    /** Lista los usuarios paginados, ordenados por apellidos; el parámetro opcional text filtra por nombre, correo o código/DNI. */
+    /** Lista los usuarios paginados, ordenados por apellidos; los parámetros opcionales text (nombre, correo o código/DNI) y role filtran el listado. */
     @GetMapping
     public PageResponse<UserResponse> findAll(
             @RequestParam(required = false) String text,
+            @RequestParam(required = false) Role role,
             @PageableDefault(size = 20, sort = "lastName", direction = Sort.Direction.ASC) Pageable pageable) {
-        return userService.findAll(text, pageable);
+        return userService.findAll(text, role, pageable);
     }
 
     /** Busca usuarios por nombre, correo o código/DNI con datos mínimos; también para el encargado (MANAGER). */

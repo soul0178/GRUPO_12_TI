@@ -9,6 +9,8 @@ export const SANCTION_TYPE_LABELS: Record<SanctionType, string> = {
   LOSS: 'Pérdida',
 };
 
+export const SANCTION_TYPES = Object.keys(SANCTION_TYPE_LABELS) as SanctionType[];
+
 export const SANCTION_STATUS_LABELS: Record<SanctionStatus, string> = {
   SUGGESTED: 'Sugerida',
   ACTIVE: 'Activa',

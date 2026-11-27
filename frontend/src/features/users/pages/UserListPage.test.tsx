@@ -58,6 +58,24 @@ describe('UserListPage', () => {
     expect(texts).toContain('apellido7');
   });
 
+  it('filtra la lista por rol', async () => {
+    const roles: Array<string | null> = [];
+    server.use(
+      http.get(`${API}/users`, ({ request }) => {
+        const role = new URL(request.url).searchParams.get('role');
+        roles.push(role);
+        return HttpResponse.json(page(role ? [user(5)] : [user(2), user(3)]));
+      }),
+    );
+    renderWithProviders(<UserListPage />);
+    await screen.findByText('Nombre2 Apellido2');
+
+    await userEvent.selectOptions(screen.getByLabelText('Rol'), 'TEACHER');
+
+    expect(await screen.findByText('Nombre5 Apellido5')).toBeInTheDocument();
+    expect(roles).toContain('TEACHER');
+  });
+
   it('avisa cuando la búsqueda no encuentra a nadie', async () => {
     server.use(
       http.get(`${API}/users`, ({ request }) =>

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { SanctionsPage } from '@/features/sanctions/pages/SanctionsPage';
@@ -42,7 +42,7 @@ describe('SanctionsPage', () => {
     renderWithProviders(<SanctionsPage />);
     await screen.findByText('Usuario 1');
 
-    await userEvent.type(screen.getByLabelText('Buscar usuario'), 'luis');
+    await userEvent.type(screen.getByLabelText('Buscar usuario o ítem'), 'luis');
 
     await waitFor(() => expect(texts).toContain('luis'));
   });
@@ -194,7 +194,24 @@ describe('SanctionsPage', () => {
 
     expect(await screen.findByText(/Daño · Extremo/)).toBeInTheDocument();
     expect(screen.getByText('Nota del administrador: Error de registro')).toBeInTheDocument();
-    expect(screen.getByText('Reserva no recogida')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('Reserva no recogida')).toBeInTheDocument();
+  });
+
+  it('filtra por tipo de sanción', async () => {
+    const types: Array<string | null> = [];
+    server.use(
+      http.get(`${API}/sanctions`, ({ request }) => {
+        types.push(new URL(request.url).searchParams.get('type'));
+        return HttpResponse.json(page([sanction(1)]));
+      }),
+    );
+    loginAs('MANAGER');
+    renderWithProviders(<SanctionsPage />);
+    await screen.findByText('Usuario 1');
+
+    await userEvent.selectOptions(screen.getByLabelText('Tipo'), 'LOSS');
+
+    await waitFor(() => expect(types).toContain('LOSS'));
   });
 
   it('el administrador rechaza una sanción', async () => {

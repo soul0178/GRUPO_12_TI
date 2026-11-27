@@ -82,7 +82,7 @@ export function ItemForm({
         {mode === 'edit' && lockedStatus && (
           <div>
             <p className="mb-1.5 text-sm font-medium text-slate-700">Estado</p>
-            <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600 ring-1 ring-inset ring-slate-200">
+            <p className=" bg-slate-50 px-3 py-2 text-sm text-slate-600 ring-1 ring-inset ring-slate-200">
               {`${ITEM_STATUS_LABELS[lockedStatus]} (no se puede cambiar manualmente)`}
             </p>
           </div>

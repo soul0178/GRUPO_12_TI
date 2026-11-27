@@ -6,7 +6,7 @@ export function DamagePolicyNotice() {
   return (
     <section
       aria-label="Política de daños y sanciones"
-      className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
+      className=" bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
     >
       <h2 className="font-semibold">Antes de reservar: ¿qué se considera un ítem dañado?</h2>
       <p className="mt-1">

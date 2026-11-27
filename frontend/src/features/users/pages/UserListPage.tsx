@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/shared/api/getErrorMessage';
 import { Alert } from '@/shared/components/Alert';
 import { Card } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
+import { FilterLayout } from '@/shared/components/FilterLayout';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Pagination } from '@/shared/components/Pagination';
@@ -38,23 +39,31 @@ export function UserListPage() {
         }
       />
 
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="user-filter" className="mb-1 block text-sm font-medium text-slate-700">
-            Buscar usuario
-          </label>
-          <input
-            id="user-filter"
-            type="search"
-            placeholder="Nombre, correo o código/DNI"
-            className={`${INPUT_CLASSES} max-w-md`}
-            value={text}
-            onChange={(event) => {
-              setText(event.target.value);
-              setPage(0);
-            }}
-          />
-        </div>
+      <FilterLayout
+        filters={
+          <>
+            <div>
+              <label
+                htmlFor="user-filter"
+                className="mb-1 block text-sm font-medium text-slate-700"
+              >
+                Buscar usuario
+              </label>
+              <input
+                id="user-filter"
+                type="search"
+                placeholder="Nombre, correo o código/DNI"
+                className={`${INPUT_CLASSES}`}
+                value={text}
+                onChange={(event) => {
+                  setText(event.target.value);
+                  setPage(0);
+                }}
+              />
+            </div>
+          </>
+        }
+      >
         {users.isError && <Alert variant="error">{getErrorMessage(users.error)}</Alert>}
         {setActive.isError && <Alert variant="error">{getErrorMessage(setActive.error)}</Alert>}
         {users.isLoading && <LoadingState message="Cargando usuarios..." />}
@@ -76,7 +85,7 @@ export function UserListPage() {
             <Pagination page={page} totalPages={users.data.totalPages} onPageChange={setPage} />
           </Card>
         )}
-      </div>
+      </FilterLayout>
     </section>
   );
 }

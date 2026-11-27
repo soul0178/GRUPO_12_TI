@@ -72,7 +72,7 @@ export function CategoryRow({ category, isSaving, onSave }: CategoryRowProps) {
         <input
           type="checkbox"
           aria-label={`Requiere garantía en ${category.name}`}
-          className="h-4 w-4 rounded border-slate-300 text-primary-600"
+          className="h-4 w-4  border-slate-300 text-primary-600"
           {...register('requiresGuarantee')}
         />
         Requiere garantía

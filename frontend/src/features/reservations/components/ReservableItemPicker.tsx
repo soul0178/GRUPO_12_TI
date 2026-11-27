@@ -39,7 +39,7 @@ export function ReservableItemPicker({ onSelect }: ReservableItemPickerProps) {
         <p className="text-sm text-slate-500">No se encontraron ítems.</p>
       )}
       {items.data && items.data.content.length > 0 && (
-        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-inset ring-slate-200">
+        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto  ring-1 ring-inset ring-slate-200">
           {items.data.content.map((item) => {
             const reservable = item.status === 'AVAILABLE' || item.status === 'ON_LOAN';
             return (

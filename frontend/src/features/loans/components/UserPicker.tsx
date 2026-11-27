@@ -35,7 +35,7 @@ export function UserPicker({
 
   if (selected) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
+      <div className="flex items-center justify-between gap-3  bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
         <div>
           <p className="font-medium text-slate-900">
             {selected.firstName} {selected.lastName}
@@ -78,7 +78,7 @@ export function UserPicker({
         <p className="text-sm text-slate-500">No se encontraron usuarios.</p>
       )}
       {lookup.data && lookup.data.length > 0 && (
-        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-inset ring-slate-200">
+        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto  ring-1 ring-inset ring-slate-200">
           {lookup.data.map((user) => (
             <li key={user.id}>
               <button

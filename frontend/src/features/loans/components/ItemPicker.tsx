@@ -42,7 +42,7 @@ export function ItemPicker({
 
   if (selected) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
+      <div className="flex items-center justify-between gap-3  bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
         <div>
           <p className="font-medium text-slate-900">
             {selected.code} · {selected.name}
@@ -89,7 +89,7 @@ export function ItemPicker({
         </p>
       )}
       {items.data && items.data.content.length > 0 && (
-        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-inset ring-slate-200">
+        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto  ring-1 ring-inset ring-slate-200">
           {items.data.content.map((item) => (
             <li key={item.id}>
               <button

@@ -93,7 +93,7 @@ export function NewReservationPage() {
 
         {item && !confirming && (
           <>
-            <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
+            <div className="flex items-center justify-between gap-3  bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
               <p className="text-sm font-medium text-slate-900">{`${item.code} · ${item.name}`}</p>
               <Button variant="secondary" size="sm" onClick={() => setItem(null)}>
                 Cambiar ítem

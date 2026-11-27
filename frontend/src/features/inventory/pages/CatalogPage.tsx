@@ -13,6 +13,7 @@ import { Alert } from '@/shared/components/Alert';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
+import { FilterLayout } from '@/shared/components/FilterLayout';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Pagination } from '@/shared/components/Pagination';
@@ -67,15 +68,17 @@ export function CatalogPage() {
         }
       />
 
-      <div className="space-y-4">
-        <Card className="p-4">
-          <ItemFilters
-            values={filters}
-            categories={categories.data ?? []}
-            onChange={handleFiltersChange}
-          />
-        </Card>
-
+      <FilterLayout
+        filters={
+          <>
+            <ItemFilters
+              values={filters}
+              categories={categories.data ?? []}
+              onChange={handleFiltersChange}
+            />
+          </>
+        }
+      >
         {itemToRetire && (
           <Card className="flex flex-wrap items-center justify-between gap-3 p-4 ring-red-200">
             <p className="text-sm text-slate-700">
@@ -108,7 +111,7 @@ export function CatalogPage() {
             <Pagination page={page} totalPages={items.data.totalPages} onPageChange={setPage} />
           </Card>
         )}
-      </div>
+      </FilterLayout>
     </section>
   );
 }

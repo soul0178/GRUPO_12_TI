@@ -158,9 +158,7 @@ describe('NewReservationPage', () => {
     await pickItem();
     fillRange('2030-03-11T19:00', '2030-03-11T21:00');
 
-    expect(
-      await screen.findByText(/horario de atención \(07:00 a 20:10\)/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/horario de atención \(07:00 a 20:10\)/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 

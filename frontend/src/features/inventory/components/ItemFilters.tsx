@@ -19,7 +19,7 @@ const LABEL_CLASSES = 'mb-1.5 block text-sm font-medium text-slate-700';
 /** Barra de filtros del catálogo: búsqueda por texto, categoría y estado. */
 export function ItemFilters({ values, categories, onChange }: ItemFiltersProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="space-y-4">
       <div>
         <label htmlFor="filter-text" className={LABEL_CLASSES}>
           Buscar

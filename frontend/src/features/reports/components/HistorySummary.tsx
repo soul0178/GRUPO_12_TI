@@ -10,22 +10,20 @@ interface Stat {
   value: number;
 }
 
-function StatGrid({ stats, className }: { stats: Stat[]; className: string }) {
+function StatStrip({ stats }: { stats: Stat[] }) {
   return (
-    <dl className={className}>
+    <dl className="grid grid-cols-2 divide-x divide-slate-200 sm:grid-flow-col sm:auto-cols-fr">
       {stats.map((stat) => (
-        <Card key={stat.label} className="p-4">
-          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {stat.label}
-          </dt>
-          <dd className="mt-1 text-2xl font-bold text-slate-900">{stat.value}</dd>
-        </Card>
+        <div key={stat.label} className="px-5 py-4">
+          <dd className="text-3xl font-bold text-slate-900">{stat.value}</dd>
+          <dt className="text-sm text-slate-500">{stat.label}</dt>
+        </div>
       ))}
     </dl>
   );
 }
 
-/** Totales del historial; las devoluciones van en su sección: normales + dañadas + perdidas = total. */
+/** Totales del historial en una tira; las devoluciones van aparte: normales + dañadas + perdidas = total. */
 export function HistorySummary({ summary }: HistorySummaryProps) {
   const states: Stat[] = [
     { label: 'Total', value: summary.total },
@@ -39,17 +37,20 @@ export function HistorySummary({ summary }: HistorySummaryProps) {
     { label: 'Devoluciones perdidas', value: summary.returnedLost },
   ];
   return (
-    <div className="space-y-4">
-      <StatGrid stats={states} className="grid grid-cols-2 gap-3 sm:grid-cols-3" />
-      <section aria-labelledby="returns-heading" className="space-y-2">
-        <h2 id="returns-heading" className="text-sm font-semibold text-slate-700">
+    <Card className="divide-y divide-slate-200">
+      <StatStrip stats={states} />
+      <section aria-labelledby="returns-heading">
+        <h2
+          id="returns-heading"
+          className="border-l-4 border-primary-700 bg-slate-50 px-5 py-2 text-sm font-semibold text-slate-800"
+        >
           Devoluciones
         </h2>
-        <StatGrid stats={returns} className="grid grid-cols-2 gap-3 lg:grid-cols-4" />
-        <p className="text-xs text-slate-500">
+        <StatStrip stats={returns} />
+        <p className="border-t border-slate-200 px-5 py-2 text-xs text-slate-500">
           De las devoluciones, {summary.returnedLate} se hicieron con atraso.
         </p>
       </section>
-    </div>
+    </Card>
   );
 }

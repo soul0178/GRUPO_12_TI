@@ -60,7 +60,7 @@ export function ItemFormPage() {
   const lockedStatus = existing.data?.status === 'ON_LOAN' ? existing.data.status : undefined;
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="max-w-3xl">
       <PageHeader
         title={itemId === undefined ? 'Nuevo ítem' : 'Editar ítem'}
         description="Datos del ítem en el inventario."

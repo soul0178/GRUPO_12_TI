@@ -4,17 +4,17 @@ interface AlertProps {
 }
 
 const STYLES = {
-  error: 'bg-red-50 text-red-800 ring-red-200',
-  success: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-  info: 'bg-primary-50 text-primary-800 ring-primary-200',
+  error: 'border-red-600 bg-red-50 text-red-800',
+  success: 'border-emerald-600 bg-emerald-50 text-emerald-800',
+  info: 'border-primary-600 bg-primary-50 text-primary-800',
 };
 
-/** Aviso de error (role="alert"), de éxito o informativo (role="status") con un mensaje en español. */
+/** Aviso de error (role="alert"), de éxito o informativo (role="status"): franja gruesa a la izquierda. */
 export function Alert({ variant, children }: AlertProps) {
   return (
     <p
       role={variant === 'error' ? 'alert' : 'status'}
-      className={`rounded-lg px-4 py-3 text-sm ring-1 ring-inset ${STYLES[variant]}`}
+      className={`border-l-4 px-4 py-3 text-sm ${STYLES[variant]}`}
     >
       {children}
     </p>

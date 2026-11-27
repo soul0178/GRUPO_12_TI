@@ -1,10 +1,10 @@
 import type { ComponentProps } from 'react';
 
-/** Contenedor blanco con borde y sombra suave para agrupar contenido. */
+/** Ficha cuadrada con borde firme y un bloque de sombra desplazado, como una ficha de biblioteca. */
 export function Card({ className = '', ...props }: ComponentProps<'div'>) {
   return (
     <div
-      className={`rounded-xl bg-white shadow-sm ring-1 ring-slate-200 ${className}`}
+      className={`border border-slate-300 bg-white shadow-[4px_4px_0_0_var(--color-slate-200)] ${className}`}
       {...props}
     />
   );

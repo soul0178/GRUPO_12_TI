@@ -37,7 +37,7 @@ export function UserFormPage() {
   }
 
   return (
-    <section className="mx-auto max-w-3xl">
+    <section className="max-w-3xl">
       <PageHeader
         title={userId === undefined ? 'Nuevo usuario' : 'Editar usuario'}
         description="Los datos del usuario y su rol en el sistema."

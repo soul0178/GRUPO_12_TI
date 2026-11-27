@@ -16,26 +16,28 @@ export function PolicySettingsPage() {
   const update = useUpdatePolicySettings();
 
   return (
-    <section className="mx-auto max-w-4xl">
+    <section>
       <PageHeader
         title="Políticas"
         description="Parámetros generales de préstamos y reservas, y plazos por categoría."
       />
-      <h2 className="mb-3 text-lg font-semibold text-slate-900">Parámetros generales</h2>
-      {settings.isLoading && <LoadingState message="Cargando políticas..." />}
-      {settings.isError && <Alert variant="error">{getErrorMessage(settings.error)}</Alert>}
-      {settings.data && (
-        <Card className="p-6">
-          <PolicySettingsForm
-            initialValues={settings.data}
-            isSubmitting={update.isPending}
-            errorMessage={update.isError ? getErrorMessage(update.error) : undefined}
-            successMessage={update.isSuccess ? 'Políticas actualizadas' : undefined}
-            onSubmit={(values) => update.mutate(values)}
-          />
-        </Card>
-      )}
-      <div className="mt-8">
+      <div className="grid items-start gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+        <div>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900">Parámetros generales</h2>
+          {settings.isLoading && <LoadingState message="Cargando políticas..." />}
+          {settings.isError && <Alert variant="error">{getErrorMessage(settings.error)}</Alert>}
+          {settings.data && (
+            <Card className="p-6">
+              <PolicySettingsForm
+                initialValues={settings.data}
+                isSubmitting={update.isPending}
+                errorMessage={update.isError ? getErrorMessage(update.error) : undefined}
+                successMessage={update.isSuccess ? 'Políticas actualizadas' : undefined}
+                onSubmit={(values) => update.mutate(values)}
+              />
+            </Card>
+          )}
+        </div>
         <CategoriesSection />
       </div>
     </section>

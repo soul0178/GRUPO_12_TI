@@ -9,6 +9,7 @@ import { Alert } from '@/shared/components/Alert';
 import { Card } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
+import { FilterLayout } from '@/shared/components/FilterLayout';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Pagination } from '@/shared/components/Pagination';
@@ -33,29 +34,34 @@ export function LoanListPage() {
           </Link>
         }
       />
-      <div className="space-y-4">
-        <Card className="p-4">
-          <label htmlFor="loan-status" className="mb-1.5 block text-sm font-medium text-slate-700">
-            Estado
-          </label>
-          <select
-            id="loan-status"
-            className={`${INPUT_CLASSES} sm:max-w-xs`}
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as LoanStatus | '');
-              setPage(0);
-            }}
-          >
-            <option value="">Todos</option>
-            {LOAN_STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {LOAN_STATUS_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </Card>
-
+      <FilterLayout
+        filters={
+          <>
+            <label
+              htmlFor="loan-status"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Estado
+            </label>
+            <select
+              id="loan-status"
+              className={`${INPUT_CLASSES}`}
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as LoanStatus | '');
+                setPage(0);
+              }}
+            >
+              <option value="">Todos</option>
+              {LOAN_STATUSES.map((value) => (
+                <option key={value} value={value}>
+                  {LOAN_STATUS_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </>
+        }
+      >
         {loans.isError && <Alert variant="error">{getErrorMessage(loans.error)}</Alert>}
         {loans.isLoading && <LoadingState message="Cargando préstamos..." />}
         {loans.data && loans.data.content.length === 0 && (
@@ -67,7 +73,7 @@ export function LoanListPage() {
             <Pagination page={page} totalPages={loans.data.totalPages} onPageChange={setPage} />
           </Card>
         )}
-      </div>
+      </FilterLayout>
     </section>
   );
 }

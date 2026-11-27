@@ -26,7 +26,7 @@ export function ProfilePage() {
   const user = profile.data;
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
+    <section>
       <PageHeader
         title="Mi perfil"
         description="Consulte sus datos y mantenga su información de contacto al día."
@@ -34,54 +34,68 @@ export function ProfilePage() {
 
       <SanctionNotice activeSanctions={activeSanctions.data?.content ?? []} />
 
-      <Card className="p-6">
-        <h2 className="text-base font-semibold text-slate-900">Datos de la cuenta</h2>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Correo institucional
-            </dt>
-            <dd className="mt-1 text-sm text-slate-900">{user.email}</dd>
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <Card className="overflow-hidden">
+          <div className="flex items-center gap-4 bg-primary-800 p-5">
+            <span
+              aria-hidden="true"
+              className="flex h-16 w-16 shrink-0 items-center justify-center bg-accent-500 text-2xl font-bold text-primary-900"
+            >
+              {`${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold text-white">
+                {`${user.firstName} ${user.lastName}`}
+              </p>
+              <p className="text-sm text-primary-100">{ROLE_LABELS[user.role]}</p>
+            </div>
           </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Código o DNI
-            </dt>
-            <dd className="mt-1 text-sm text-slate-900">{user.documentNumber}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Rol</dt>
-            <dd className="mt-1 text-sm text-slate-900">{ROLE_LABELS[user.role]}</dd>
-          </div>
-        </dl>
-      </Card>
+          <h2 className="sr-only">Datos de la cuenta</h2>
+          <dl className="divide-y divide-slate-200 text-sm">
+            <div className="px-5 py-3">
+              <dt className="text-xs text-slate-500">Correo institucional</dt>
+              <dd className="mt-0.5 break-all font-semibold text-slate-900">{user.email}</dd>
+            </div>
+            <div className="px-5 py-3">
+              <dt className="text-xs text-slate-500">Código o DNI</dt>
+              <dd className="mt-0.5 font-semibold text-slate-900">{user.documentNumber}</dd>
+            </div>
+          </dl>
+        </Card>
 
-      <Card className="p-6">
-        <h2 className="mb-4 text-base font-semibold text-slate-900">Datos de contacto</h2>
-        <ProfileForm
-          initialValues={{
-            firstName: user.firstName,
-            lastName: user.lastName,
-            phone: user.phone ?? '',
-          }}
-          isSubmitting={updateProfile.isPending}
-          errorMessage={updateProfile.isError ? getErrorMessage(updateProfile.error) : undefined}
-          successMessage={updateProfile.isSuccess ? 'Perfil actualizado' : undefined}
-          onSubmit={(values) =>
-            updateProfile.mutate({ ...values, phone: values.phone || undefined })
-          }
-        />
-      </Card>
+        <div className="space-y-6">
+          <Card className="p-6">
+            <h2 className="mb-4 text-base font-semibold text-slate-900">Datos de contacto</h2>
+            <ProfileForm
+              initialValues={{
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phone: user.phone ?? '',
+              }}
+              isSubmitting={updateProfile.isPending}
+              errorMessage={
+                updateProfile.isError ? getErrorMessage(updateProfile.error) : undefined
+              }
+              successMessage={updateProfile.isSuccess ? 'Perfil actualizado' : undefined}
+              onSubmit={(values) =>
+                updateProfile.mutate({ ...values, phone: values.phone || undefined })
+              }
+            />
+          </Card>
 
-      <Card className="p-6">
-        <h2 className="mb-4 text-base font-semibold text-slate-900">Cambiar contraseña</h2>
-        <ChangePasswordForm
-          isSubmitting={changePassword.isPending}
-          errorMessage={changePassword.isError ? getErrorMessage(changePassword.error) : undefined}
-          successMessage={changePassword.isSuccess ? 'Contraseña actualizada' : undefined}
-          onSubmit={(values) => changePassword.mutate(values)}
-        />
-      </Card>
+          <Card className="p-6">
+            <h2 className="mb-4 text-base font-semibold text-slate-900">Cambiar contraseña</h2>
+            <ChangePasswordForm
+              isSubmitting={changePassword.isPending}
+              errorMessage={
+                changePassword.isError ? getErrorMessage(changePassword.error) : undefined
+              }
+              successMessage={changePassword.isSuccess ? 'Contraseña actualizada' : undefined}
+              onSubmit={(values) => changePassword.mutate(values)}
+            />
+          </Card>
+        </div>
+      </div>
     </section>
   );
 }

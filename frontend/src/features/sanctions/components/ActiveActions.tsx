@@ -17,12 +17,19 @@ interface ActiveActionsProps {
 type Mode = 'lift' | 'reduce' | null;
 
 /** Controles de una sanción activa: Reducir (nueva duración total) o Levantar, siempre con un motivo (ADMIN). */
-export function ActiveActions({ userName, canReduce, disabled, onLift, onReduce }: ActiveActionsProps) {
+export function ActiveActions({
+  userName,
+  canReduce,
+  disabled,
+  onLift,
+  onReduce,
+}: ActiveActionsProps) {
   const [mode, setMode] = useState<Mode>(null);
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('');
   const parsedDays = Number(days);
-  const daysValid = Number.isInteger(parsedDays) && parsedDays >= MIN_DAYS && parsedDays <= MAX_DAYS;
+  const daysValid =
+    Number.isInteger(parsedDays) && parsedDays >= MIN_DAYS && parsedDays <= MAX_DAYS;
   const canSubmit = reason.trim() !== '' && (mode === 'lift' || daysValid);
 
   function close() {
@@ -35,7 +42,12 @@ export function ActiveActions({ userName, canReduce, disabled, onLift, onReduce 
     return (
       <div className="flex items-center justify-end gap-2">
         {canReduce && (
-          <Button variant="secondary" size="sm" disabled={disabled} onClick={() => setMode('reduce')}>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={disabled}
+            onClick={() => setMode('reduce')}
+          >
             Reducir
           </Button>
         )}

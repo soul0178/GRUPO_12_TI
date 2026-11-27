@@ -35,6 +35,7 @@ export function AppLayout() {
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.roles || (user && item.roles.includes(user.role)),
   );
+
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase() : '';
 
   function handleLogout() {
@@ -44,24 +45,24 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-3">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Logotipo de la EPCC" className="h-10 w-auto" />
-            <span className="text-base font-semibold text-slate-900">Préstamos EPCC</span>
+      <header className="sticky top-0 z-10 border-b border-slate-300 bg-white">
+        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center gap-x-6 gap-y-2 px-6">
+          <div className="flex items-center gap-3 py-2">
+            <img src={logo} alt="Logotipo de la EPCC" className="h-11 w-auto" />
+            <span className="text-lg font-bold text-primary-800">Préstamos EPCC</span>
           </div>
 
-          <nav aria-label="Navegación principal" className="flex flex-1 items-center gap-1">
+          <nav aria-label="Navegación principal" className="flex flex-1 flex-wrap items-stretch">
             {visibleItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end ?? true}
                 className={({ isActive }) =>
-                  `rounded-lg px-2 py-2 text-sm font-medium transition ${
+                  `flex items-center border-b-4 px-3 pt-1 text-sm font-semibold transition ${
                     isActive
-                      ? 'bg-primary-50 text-primary-700 ring-1 ring-inset ring-accent-500'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'border-accent-500 text-primary-800'
+                      : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900'
                   }`
                 }
               >
@@ -70,15 +71,15 @@ export function AppLayout() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 py-2">
             <span
               aria-hidden="true"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700"
+              className="flex h-9 w-9 items-center justify-center bg-primary-800 text-xs font-bold text-white"
             >
               {initials}
             </span>
             <div className="hidden text-right leading-tight sm:block">
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-sm font-semibold text-slate-900">
                 {user ? `${user.firstName} ${user.lastName}` : ''}
               </p>
               <p className="text-xs text-slate-500">{user ? ROLE_LABELS[user.role] : ''}</p>

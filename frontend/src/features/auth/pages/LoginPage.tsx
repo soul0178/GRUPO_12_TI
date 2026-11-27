@@ -43,7 +43,7 @@ export function LoginPage() {
           <p className="text-xs text-slate-500">Universidad Nacional de San Agustín</p>
         </div>
         <Card className="p-8">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Iniciar sesión</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Iniciar sesión</h1>
           <p className="mt-1 text-sm text-slate-500">Ingrese con su correo institucional.</p>
           <form
             onSubmit={handleSubmit((values) => login.mutate(values))}

@@ -9,12 +9,11 @@ interface ButtonProps extends ComponentProps<'button'> {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    'bg-primary-600 text-white shadow-sm hover:bg-primary-500 focus-visible:outline-primary-600',
+  primary: 'bg-primary-700 text-white hover:bg-primary-600 focus-visible:outline-primary-700',
   secondary:
-    'bg-white text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus-visible:outline-slate-400',
+    'bg-white text-slate-800 ring-1 ring-inset ring-slate-400 hover:bg-slate-100 focus-visible:outline-slate-500',
   danger:
-    'bg-white text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50 focus-visible:outline-red-500',
+    'bg-white text-red-700 ring-1 ring-inset ring-red-400 hover:bg-red-50 focus-visible:outline-red-500',
 };
 
 const SIZES: Record<Size, string> = {
@@ -33,7 +32,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center rounded-lg font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex items-center justify-center  font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
       {...props}
     />
   );

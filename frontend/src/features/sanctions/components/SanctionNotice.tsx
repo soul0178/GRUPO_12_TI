@@ -15,10 +15,7 @@ export function SanctionNotice({ activeSanctions }: SanctionNoticeProps) {
   const lastEnd = endDates.sort().at(-1);
 
   return (
-    <div
-      role="alert"
-      className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200"
-    >
+    <div role="alert" className=" bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
       <p className="font-semibold">Tiene una sanción activa</p>
       <p className="mt-1">
         {`No puede hacer reservas ni recibir nuevos préstamos${lastEnd ? ` hasta el ${formatDateTime(lastEnd)}` : ''}.`}

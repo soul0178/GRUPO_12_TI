@@ -11,8 +11,15 @@ import type { DamageLevel } from '@/features/sanctions/types/sanction';
 export function useConfirmSanction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, days, damageLevel }: { id: number; days?: number; damageLevel?: DamageLevel }) =>
-      confirmSanction(id, { days, damageLevel }),
+    mutationFn: ({
+      id,
+      days,
+      damageLevel,
+    }: {
+      id: number;
+      days?: number;
+      damageLevel?: DamageLevel;
+    }) => confirmSanction(id, { days, damageLevel }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sanctions'] }),
   });
 }

@@ -15,6 +15,7 @@ import { Alert } from '@/shared/components/Alert';
 import { Card } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
+import { FilterLayout } from '@/shared/components/FilterLayout';
 import { LoadingState } from '@/shared/components/LoadingState';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -43,53 +44,55 @@ export function SanctionsPage() {
         title="Sanciones"
         description="Atraso, reserva no recogida y pérdida (automáticas) y daño (sugerido, a confirmar por el administrador)."
       />
-      <div className="space-y-4">
-        <Card className="grid gap-4 p-4 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="sanction-user"
-              className="mb-1.5 block text-sm font-medium text-slate-700"
-            >
-              Buscar usuario
-            </label>
-            <input
-              id="sanction-user"
-              type="search"
-              placeholder="Nombre, correo o código/DNI"
-              className={INPUT_CLASSES}
-              value={text}
-              onChange={(event) => {
-                setText(event.target.value);
-                setPage(0);
-              }}
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="sanction-status"
-              className="mb-1.5 block text-sm font-medium text-slate-700"
-            >
-              Estado
-            </label>
-            <select
-              id="sanction-status"
-              className={`${INPUT_CLASSES} `}
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value as SanctionStatus | '');
-                setPage(0);
-              }}
-            >
-              <option value="">Todas</option>
-              {SANCTION_STATUSES.map((value) => (
-                <option key={value} value={value}>
-                  {SANCTION_STATUS_LABELS[value]}
-                </option>
-              ))}
-            </select>
-          </div>
-        </Card>
-
+      <FilterLayout
+        filters={
+          <>
+            <div>
+              <label
+                htmlFor="sanction-user"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Buscar usuario
+              </label>
+              <input
+                id="sanction-user"
+                type="search"
+                placeholder="Nombre, correo o código/DNI"
+                className={INPUT_CLASSES}
+                value={text}
+                onChange={(event) => {
+                  setText(event.target.value);
+                  setPage(0);
+                }}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="sanction-status"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Estado
+              </label>
+              <select
+                id="sanction-status"
+                className={`${INPUT_CLASSES} `}
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value as SanctionStatus | '');
+                  setPage(0);
+                }}
+              >
+                <option value="">Todas</option>
+                {SANCTION_STATUSES.map((value) => (
+                  <option key={value} value={value}>
+                    {SANCTION_STATUS_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        }
+      >
         {actionError && <Alert variant="error">{getErrorMessage(actionError)}</Alert>}
         {sanctions.isError && <Alert variant="error">{getErrorMessage(sanctions.error)}</Alert>}
         {sanctions.isLoading && <LoadingState message="Cargando sanciones..." />}
@@ -110,7 +113,7 @@ export function SanctionsPage() {
             <Pagination page={page} totalPages={sanctions.data.totalPages} onPageChange={setPage} />
           </Card>
         )}
-      </div>
+      </FilterLayout>
     </section>
   );
 }

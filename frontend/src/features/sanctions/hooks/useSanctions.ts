@@ -1,12 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getMySanctions, getSanctions } from '@/features/sanctions/api/sanctionsApi';
 import type { SanctionStatus } from '@/features/sanctions/types/sanction';
 
-/** Consulta una página de sanciones de todos los usuarios (personal), con filtro opcional de estado. */
-export function useSanctions(status: SanctionStatus | undefined, page: number, size: number) {
+/** Consulta una página de sanciones de todos los usuarios (personal), con filtro opcional de estado y de usuario. */
+export function useSanctions(
+  status: SanctionStatus | undefined,
+  page: number,
+  size: number,
+  text = '',
+) {
   return useQuery({
-    queryKey: ['sanctions', { status, page, size }],
-    queryFn: () => getSanctions(status, page, size),
+    queryKey: ['sanctions', { status, page, size, text }],
+    queryFn: () => getSanctions(status, page, size, text),
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { SanctionsPage } from '@/features/sanctions/pages/SanctionsPage';
@@ -30,6 +30,23 @@ const page = (content: unknown[]) => ({
 });
 
 describe('SanctionsPage', () => {
+  it('filtra las sanciones por el usuario buscado', async () => {
+    const texts: Array<string | null> = [];
+    server.use(
+      http.get(`${API}/sanctions`, ({ request }) => {
+        texts.push(new URL(request.url).searchParams.get('text'));
+        return HttpResponse.json(page([sanction(1)]));
+      }),
+    );
+    loginAs('MANAGER');
+    renderWithProviders(<SanctionsPage />);
+    await screen.findByText('Usuario 1');
+
+    await userEvent.type(screen.getByLabelText('Buscar usuario'), 'luis');
+
+    await waitFor(() => expect(texts).toContain('luis'));
+  });
+
   it('muestra la carga y luego las sanciones sugeridas', async () => {
     server.use(http.get(`${API}/sanctions`, () => HttpResponse.json(page([sanction(1)]))));
     loginAs('ADMIN');

@@ -16,6 +16,7 @@ import { Card } from '@/shared/components/Card';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { INPUT_CLASSES } from '@/shared/components/FormField';
 import { LoadingState } from '@/shared/components/LoadingState';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Pagination } from '@/shared/components/Pagination';
 
@@ -26,7 +27,9 @@ export function SanctionsPage() {
   const isAdmin = useAuthStore((state) => state.user?.role === 'ADMIN');
   const [status, setStatus] = useState<SanctionStatus | ''>('SUGGESTED');
   const [page, setPage] = useState(0);
-  const sanctions = useSanctions(status || undefined, page, PAGE_SIZE);
+  const [text, setText] = useState('');
+  const debounced = useDebouncedValue(text, 300);
+  const sanctions = useSanctions(status || undefined, page, PAGE_SIZE, debounced);
   const confirm = useConfirmSanction();
   const reject = useRejectSanction();
   const lift = useLiftSanction();
@@ -41,29 +44,50 @@ export function SanctionsPage() {
         description="Atraso, reserva no recogida y pérdida (automáticas) y daño (sugerido, a confirmar por el administrador)."
       />
       <div className="space-y-4">
-        <Card className="p-4">
-          <label
-            htmlFor="sanction-status"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
-            Estado
-          </label>
-          <select
-            id="sanction-status"
-            className={`${INPUT_CLASSES} sm:max-w-xs`}
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value as SanctionStatus | '');
-              setPage(0);
-            }}
-          >
-            <option value="">Todas</option>
-            {SANCTION_STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {SANCTION_STATUS_LABELS[value]}
-              </option>
-            ))}
-          </select>
+        <Card className="grid gap-4 p-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="sanction-user"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Buscar usuario
+            </label>
+            <input
+              id="sanction-user"
+              type="search"
+              placeholder="Nombre, correo o código/DNI"
+              className={INPUT_CLASSES}
+              value={text}
+              onChange={(event) => {
+                setText(event.target.value);
+                setPage(0);
+              }}
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="sanction-status"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Estado
+            </label>
+            <select
+              id="sanction-status"
+              className={`${INPUT_CLASSES} `}
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value as SanctionStatus | '');
+                setPage(0);
+              }}
+            >
+              <option value="">Todas</option>
+              {SANCTION_STATUSES.map((value) => (
+                <option key={value} value={value}>
+                  {SANCTION_STATUS_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </div>
         </Card>
 
         {actionError && <Alert variant="error">{getErrorMessage(actionError)}</Alert>}

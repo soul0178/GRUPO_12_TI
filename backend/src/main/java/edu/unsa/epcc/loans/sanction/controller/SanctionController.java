@@ -31,13 +31,14 @@ public class SanctionController {
 
     private final SanctionService sanctionService;
 
-    /** Lista las sanciones de todos los usuarios, con filtro opcional de estado. */
+    /** Lista las sanciones de todos los usuarios, con filtro opcional de estado y de usuario (text). */
     @GetMapping("/sanctions")
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public PageResponse<SanctionResponse> findAll(
             @RequestParam(required = false) SanctionStatus status,
+            @RequestParam(required = false) String text,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return sanctionService.findAll(status, pageable);
+        return sanctionService.findAll(status, text, pageable);
     }
 
     /** Lista las sanciones del usuario autenticado, con filtro opcional de estado. */

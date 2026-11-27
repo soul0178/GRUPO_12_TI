@@ -12,9 +12,10 @@ export async function getSanctions(
   status: SanctionStatus | undefined,
   page: number,
   size: number,
+  text = '',
 ): Promise<Page<Sanction>> {
   const { data } = await apiClient.get<Page<Sanction>>('/sanctions', {
-    params: { status, page, size },
+    params: { status, page, size, text: text.trim() || undefined },
   });
   return data;
 }

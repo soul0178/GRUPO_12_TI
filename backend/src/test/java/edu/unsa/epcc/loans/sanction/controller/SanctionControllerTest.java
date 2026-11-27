@@ -53,6 +53,22 @@ class SanctionControllerTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.content[0].userEmail").isNotEmpty());
     }
 
+    @Test
+    void shouldFilterSanctionsByUserText() throws Exception {
+        User target = users.create(Role.STUDENT);
+        suggestedFor(target);
+        suggestedFor(users.create(Role.STUDENT));
+
+        mockMvc.perform(get("/api/sanctions").param("text", target.getEmail().toUpperCase())
+                        .header("Authorization", bearer(Role.MANAGER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].userEmail").value(target.getEmail()));
+        mockMvc.perform(get("/api/sanctions").param("text", "nadie-con-este-texto")
+                        .header("Authorization", bearer(Role.MANAGER)))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
     @ParameterizedTest
     @EnumSource(value = Role.class, names = {"STUDENT", "TEACHER", "ADMINISTRATIVE"})
     void shouldReturn403WhenBorrowerListsAllSanctions(Role role) throws Exception {
